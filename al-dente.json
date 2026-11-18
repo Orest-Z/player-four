@@ -1,0 +1,28 @@
+{
+  "parts": {
+    "screens": {
+      "label": "Screens",
+      "description": "Phone screens: pairing (scan, tap to allow tilt) and the controller drawn on screen",
+      "paths": ["phone/src/screens"],
+      "uses": ["input", "link", "protocol"]
+    },
+    "input": {
+      "label": "Input",
+      "description": "Turns touches, sticks and the tilt sensor into one gamepad state",
+      "paths": ["phone/src/input"],
+      "uses": ["protocol"]
+    },
+    "link": {
+      "label": "Link",
+      "description": "Direct WebRTC connection to the PC from the QR code data; sends state packets",
+      "paths": ["phone/src/link"],
+      "uses": ["protocol"]
+    },
+    "protocol": {
+      "label": "Protocol",
+      "description": "Gamepad state type and its binary packet format, mirrored by the Rust PC host",
+      "paths": ["phone/src/protocol"],
+      "uses": []
+    }
+  }
+}
