@@ -2,13 +2,18 @@
 //! from one QR code. Phone browser -> PC over WebRTC with no signaling server.
 
 use std::error::Error;
-use std::io::{ErrorKind, Read, Write};
+use std::fs;
+use std::io::{self, ErrorKind, Read, Write};
 use std::net::{IpAddr, SocketAddr, TcpListener, UdpSocket};
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use qrcode::QrCode;
 use qrcode::render::{svg, unicode};
+use rustls::ServerConfig;
+use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use str0m::channel::{ChannelConfig, Reliability};
 use str0m::config::Fingerprint;
 use str0m::ice::StunMessage;
@@ -16,7 +21,12 @@ use str0m::net::{Protocol, Receive};
 use str0m::{Candidate, Event, IceConnectionState, IceCreds, Input, Output, Rtc, RtcConfig};
 use vigem_client::{Client, TargetId, XButtons, XGamepad, Xbox360Wired};
 
-const PAGE: &str = include_str!("phone.html");
+/// The phone app, served from disk so it can be edited without rebuilding.
+/// ponytail: only works next to the source tree; embed the files for release builds.
+const WEB_ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../phone");
+/// Saved next to where we run, so a phone's "proceed anyway" survives restarts.
+const TLS_CERT: &str = "phonepad-tls-cert.der";
+const TLS_KEY: &str = "phonepad-tls-key.der";
 /// XInput's limit.
 const MAX_PLAYERS: usize = 4;
 /// A phone that goes quiet this long (screen locked, browser in the background)
@@ -73,8 +83,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         .map(|b| format!("{b:02X}"))
         .collect();
 
+    let tls = tls_config(ip)?;
+
     let url = format!(
-        "http://{http_addr}/#u={}&p={}&f={fingerprint}&a={udp_addr}",
+        "https://{http_addr}/#u={}&p={}&f={fingerprint}&a={udp_addr}",
         creds.ufrag, creds.pass
     );
     let qr = QrCode::new(&url)?;
@@ -87,15 +99,24 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::fs::write("qr.svg", qr.render::<svg::Color>().min_dimensions(320, 320).build())?;
     println!("\n{text_qr}\nUp to {MAX_PLAYERS} phones on the same Wi-Fi can scan this.");
     println!("QR won't scan? Open qr.svg in this folder instead.\n{url}\n");
+    println!("First time on each phone the browser warns about the certificate (it's this PC's own):");
+    println!("  Android Chrome: Advanced -> Proceed to {ip} (unsafe)");
+    println!("  iPhone Safari:  Show Details -> visit this website\n");
 
     std::thread::spawn(move || {
-        for mut conn in http.incoming().flatten() {
-            let _ = conn.read(&mut [0; 2048]); // ponytail: request ignored, every path gets the page
-            let _ = write!(
-                conn,
-                "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{PAGE}",
-                PAGE.len()
-            );
+        for tcp in http.incoming().flatten() {
+            let tls = tls.clone();
+            // One thread per connection, so a slow or broken phone can't stall the others.
+            std::thread::spawn(move || {
+                let _ = tcp.set_read_timeout(Some(Duration::from_secs(5)));
+                let _ = tcp.set_write_timeout(Some(Duration::from_secs(5)));
+                let Ok(conn) = rustls::ServerConnection::new(tls) else { return };
+                let mut stream = rustls::StreamOwned::new(conn, tcp);
+                if respond(&mut stream).is_ok() {
+                    stream.conn.send_close_notify();
+                    let _ = stream.flush();
+                }
+            });
         }
     });
 
@@ -244,6 +265,99 @@ impl Player {
         if let Err(e) = self.pad.update(&self.state) {
             println!("Player {}: controller update failed: {e:?}", self.number);
         }
+    }
+}
+
+/// HTTPS config with a self-signed certificate. Phones only expose the tilt
+/// sensor to secure pages, and a self-signed one counts once the player taps
+/// past the browser's warning.
+fn tls_config(ip: IpAddr) -> Result<Arc<ServerConfig>, Box<dyn Error>> {
+    // ponytail: the saved certificate names the IP it was made for; delete both files if the PC's IP changes.
+    let (cert, key) = match (fs::read(TLS_CERT), fs::read(TLS_KEY)) {
+        (Ok(cert), Ok(key)) => (cert, key),
+        _ => {
+            let made = rcgen::generate_simple_self_signed(vec![ip.to_string(), "localhost".into()])?;
+            let (cert, key) = (made.cert.der().to_vec(), made.signing_key.serialize_der());
+            fs::write(TLS_CERT, &cert)?;
+            fs::write(TLS_KEY, &key)?;
+            (cert, key)
+        }
+    };
+    let config = ServerConfig::builder_with_provider(Arc::new(rustls::crypto::ring::default_provider()))
+        .with_safe_default_protocol_versions()?
+        .with_no_client_auth()
+        .with_single_cert(vec![CertificateDer::from(cert)], PrivateKeyDer::Pkcs8(key.into()))?;
+    Ok(Arc::new(config))
+}
+
+/// Answers one GET/HEAD request with a file from the phone app.
+fn respond(stream: &mut (impl Read + Write)) -> io::Result<()> {
+    let mut req = Vec::new();
+    let mut buf = [0; 1024];
+    while !req.windows(4).any(|w| w == b"\r\n\r\n") {
+        let n = stream.read(&mut buf)?;
+        if n == 0 || req.len() > 8192 {
+            return Ok(());
+        }
+        req.extend_from_slice(&buf[..n]);
+    }
+    let head = String::from_utf8_lossy(&req);
+    let mut words = head.lines().next().unwrap_or_default().split(' ');
+    let (method, target) = (words.next().unwrap_or_default(), words.next().unwrap_or_default());
+
+    let (status, content_type, body) = if method != "GET" && method != "HEAD" {
+        ("405 Method Not Allowed", "text/plain", b"Method not allowed".to_vec())
+    } else {
+        match resolve(Path::new(WEB_ROOT), target) {
+            None => ("400 Bad Request", "text/plain", b"Bad request".to_vec()),
+            Some((path, content_type)) => match fs::metadata(&path).ok().filter(|m| m.is_file()).and_then(|_| fs::read(&path).ok()) {
+                Some(body) => ("200 OK", content_type, body),
+                None => ("404 Not Found", "text/plain", b"Not found".to_vec()),
+            },
+        }
+    };
+    write!(
+        stream,
+        "HTTP/1.1 {status}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n",
+        body.len()
+    )?;
+    if method != "HEAD" {
+        stream.write_all(&body)?;
+    }
+    stream.flush()
+}
+
+/// The file under `root` a request target names, with its content type. None
+/// for anything that isn't a plain relative path to a file type we serve, so a
+/// request can never reach outside `root`.
+fn resolve(root: &Path, target: &str) -> Option<(PathBuf, &'static str)> {
+    let path = target.split(['?', '#']).next()?.strip_prefix('/')?;
+    let path = if path.is_empty() { "index.html" } else { path };
+    let plain = path.bytes().all(|b| b.is_ascii_alphanumeric() || b"._-/".contains(&b));
+    if !plain || path.contains("..") || path.contains("//") || path.starts_with('/') {
+        return None;
+    }
+    let content_type = match path.rsplit_once('.')?.1 {
+        "html" => "text/html; charset=utf-8",
+        "js" => "text/javascript; charset=utf-8",
+        "css" => "text/css; charset=utf-8",
+        "svg" => "image/svg+xml",
+        "json" => "application/json",
+        "webmanifest" => "application/manifest+json",
+        "png" => "image/png",
+        "ico" => "image/x-icon",
+        _ => return None,
+    };
+    Some((root.join(path), content_type))
+}
+
+#[test]
+fn resolve_stays_inside_root() {
+    let root = Path::new("/root");
+    assert_eq!(resolve(root, "/").unwrap().0, root.join("index.html"));
+    assert_eq!(resolve(root, "/src/main.js?v=2").unwrap().1, "text/javascript; charset=utf-8");
+    for bad in ["/../x.js", "/src/../../x.js", "/src/..%2f..%2fx.js", "/a\\b.js", "/C:/x.js", "//x.js", "/x.exe", "x.js", "/con.js:alt"] {
+        assert!(resolve(root, bad).is_none(), "{bad}");
     }
 }
 
