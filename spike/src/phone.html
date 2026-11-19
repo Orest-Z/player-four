@@ -2,35 +2,84 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<title>phonepad spike</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#111">
+<title>phonepad</title>
 <style>
-  body { margin: 0; font: 16px system-ui, sans-serif; background: #111; color: #eee;
-         touch-action: none; user-select: none; -webkit-user-select: none; }
-  #status { padding: 16px; min-height: 3em; }
-  #pad { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; }
-  button { height: 28vh; font-size: 48px; border: 0; border-radius: 16px; background: #333; color: #fff; }
-  button.on { background: #2a7; }
+  :root { --p: #777; --s: min(17vh, 11vw); }  /* --p: player color, set once the PC says which player we are */
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #111; color: #eee;
+    font: 600 16px system-ui, sans-serif; touch-action: none; user-select: none;
+    -webkit-user-select: none; -webkit-touch-callout: none; overscroll-behavior: none; }
+  body { display: grid; height: 100dvh; gap: 2vh 2vw;
+    padding: max(2vh, env(safe-area-inset-top)) max(2vw, env(safe-area-inset-right)) max(2vh, env(safe-area-inset-bottom)) max(2vw, env(safe-area-inset-left));
+    grid-template: "bar bar  bar  bar" 10vh
+                   "lt  lb   rb   rt" 16vh
+                   "lt  stk  face rt" 1fr / 12vw 1fr 1fr 12vw; }
+  #bar { grid-area: bar; display: flex; align-items: center; gap: 2vw; }
+  #chip { background: var(--p); color: #000; padding: .3em .9em; border-radius: 99px; }
+  #status { flex: 1; opacity: .6; font-weight: 400; white-space: nowrap; overflow: hidden; }
+  button { border: 0; border-radius: 14px; background: #2a2a2a; color: #fff; font: inherit; }
+  button.on { filter: brightness(1.7); transform: scale(.94); }
+  #bar button { height: 100%; padding: 0 4vw; font-size: 13px; }
+  .round { border-radius: 50%; font-size: 26px; }
+  #face { grid-area: face; display: grid; place-content: center; gap: 1vh;
+    grid-template: ". y ." var(--s) "x . b" var(--s) ". a ." var(--s) / var(--s) var(--s) var(--s); }
+  .trig { position: relative; border-radius: 14px; background: #2a2a2a; overflow: hidden; display: grid; place-items: center; }
+  .trig i { position: absolute; inset: auto 0 0; height: 0; background: var(--p); opacity: .8; }
+  .trig span { position: relative; }
+  #stick { grid-area: stk; position: relative; border-radius: 20px; background: #1a1a1a; overflow: hidden;
+    display: grid; place-items: center; color: #444; font-weight: 400; }
+  #base, #knob { position: absolute; translate: -50% -50%; border-radius: 50%; pointer-events: none; }
+  #base { border: 2px solid var(--p); opacity: .5; }
+  #knob { width: 13vh; height: 13vh; background: var(--p); }
+  .overlay { position: fixed; inset: 0; display: grid; place-content: center; text-align: center;
+    gap: 1em; background: #111e; font-size: 22px; }
+  .overlay small { font-size: 14px; font-weight: 400; opacity: .6; }
+  #rotate { display: none; z-index: 1; }
+  #start { z-index: 2; }
+  @media (orientation: portrait) { #rotate { display: grid; } }
 </style>
 </head>
 <body>
-<div id="status" role="status">Connecting…</div>
-<div id="pad"><button>A</button><button>B</button><button>X</button><button>Y</button></div>
-<script type="module">
-// Throwaway spike page: connects straight to the PC using only what the QR code carried.
-const status = document.getElementById('status');
-const show = text => (status.textContent = text);
-addEventListener('unhandledrejection', e => show('Error: ' + e.reason));
+<header id="bar">
+  <span id="chip">P?</span><span id="status">Connecting…</span>
+  <button data-b="0x0020">BACK</button>
+  <button data-b="0x0010">START</button>
+  <button id="fs" aria-label="Full screen">⛶</button>
+</header>
+<div class="trig" data-t="lt" style="grid-area:lt"><i></i><span>LT</span></div>
+<button data-b="0x0100" style="grid-area:lb">LB</button>
+<button data-b="0x0200" style="grid-area:rb">RB</button>
+<div class="trig" data-t="rt" style="grid-area:rt"><i></i><span>RT</span></div>
+<div id="stick">touch &amp; drag<div id="base" hidden></div><div id="knob" hidden></div></div>
+<div id="face">
+  <button class="round" data-b="0x8000" style="grid-area:y;background:#a80">Y</button>
+  <button class="round" data-b="0x4000" style="grid-area:x;background:#26b">X</button>
+  <button class="round" data-b="0x2000" style="grid-area:b;background:#b33">B</button>
+  <button class="round" data-b="0x1000" style="grid-area:a;background:#294">A</button>
+</div>
+<div id="rotate" class="overlay">Turn your phone sideways</div>
+<div id="start" class="overlay">Tap to play<small>Goes full screen. On iPhone, Safari keeps its bars; turn the phone sideways.</small></div>
 
+<script type="module">
+// Throwaway spike page: a gamepad that talks straight to the PC using only what the QR code carried.
+const $ = s => document.querySelector(s);
+const show = text => ($('#status').textContent = text);
+addEventListener('unhandledrejection', e => show('Error: ' + e.reason));
+addEventListener('contextmenu', e => e.preventDefault());
+const COLORS = ['#777', '#4a9eff', '#ff5a5a', '#3ecf6e', '#ffc93c']; // index = player number
+
+// ---- Connection ----
 const q = new URLSearchParams(location.hash.slice(1));
 const [ip, port] = q.get('a').split(':'); // spike: IPv4 only
 const fingerprint = q.get('f').match(/../g).join(':');
-
 const pc = new RTCPeerConnection();
 // Unordered and never retransmitted: a late gamepad packet is worse than a lost one.
 const dc = pc.createDataChannel('pad', { negotiated: true, id: 0, ordered: false, maxRetransmits: 0 });
-pc.onconnectionstatechange = () => pc.connectionState !== 'connected' && show('Connection: ' + pc.connectionState);
-
 await pc.setLocalDescription(await pc.createOffer());
 const mid = pc.localDescription.sdp.match(/a=mid:(\S+)/)[1];
 // The PC's answer, built here from the QR data instead of fetched from a server.
@@ -44,27 +93,114 @@ await pc.setRemoteDescription({ type: 'answer', sdp: [
   `a=candidate:1 1 udp 2130706431 ${ip} ${port} typ host`, 'a=end-of-candidates', '',
 ].join('\r\n') });
 
+pc.onconnectionstatechange = () => {
+  if (!['failed', 'disconnected', 'closed'].includes(pc.connectionState)) return;
+  $('#start').firstChild.textContent = 'Disconnected. Tap to reconnect';
+  $('#start').hidden = false;
+  $('#start').onclick = () => location.reload();
+};
 const rtts = [];
 dc.onopen = () => {
   show('Connected');
-  setInterval(() => dc.send('p ' + performance.now()), 200);
+  setInterval(send, 100); // heartbeat: repairs lost packets, tells the PC we're still here
+  setInterval(() => dc.readyState === 'open' && dc.send('p ' + performance.now()), 500);
 };
 dc.onmessage = e => {
-  rtts.push(performance.now() - parseFloat(e.data.slice(2)));
-  if (rtts.length > 50) rtts.shift();
-  const avg = rtts.reduce((a, b) => a + b) / rtts.length;
-  show(`Connected · round trip ${rtts.at(-1).toFixed(1)} ms · avg ${avg.toFixed(1)} · best ${Math.min(...rtts).toFixed(1)}`);
+  const [, sent, player] = e.data.split(' ');
+  rtts.push(performance.now() - sent);
+  if (rtts.length > 20) rtts.shift();
+  show(`${rtts.at(-1).toFixed(0)} ms (avg ${(rtts.reduce((a, b) => a + b) / rtts.length).toFixed(0)})`);
+  $('#chip').textContent = 'P' + player;
+  document.documentElement.style.setProperty('--p', COLORS[player] ?? COLORS[0]);
 };
 
-for (const b of document.querySelectorAll('button')) {
-  const send = down => {
-    if (b.classList.contains('on') === down) return;
-    b.classList.toggle('on', down);
-    if (dc.readyState === 'open') dc.send(`${b.textContent} ${down ? 'pressed' : 'released'}`);
-  };
-  b.onpointerdown = () => send(true);
-  b.onpointerup = b.onpointercancel = b.onpointerleave = () => send(false);
+// ---- Gamepad state, in XInput's own layout so the PC copies it straight in ----
+const state = { buttons: 0, lt: 0, rt: 0, lx: 0, ly: 0, rx: 0, ry: 0 };
+let seq = 0;
+function send() {
+  if (dc.readyState !== 'open') return;
+  const v = new DataView(new ArrayBuffer(14));
+  v.setUint16(0, seq = (seq + 1) & 0xffff, true);
+  v.setUint16(2, state.buttons, true);
+  v.setUint8(4, state.lt);
+  v.setUint8(5, state.rt);
+  [state.lx, state.ly, state.rx, state.ry].forEach((n, i) => v.setInt16(6 + i * 2, n, true));
+  dc.send(v.buffer);
 }
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) return;
+  Object.assign(state, { buttons: 0, lt: 0, rt: 0, lx: 0, ly: 0, rx: 0, ry: 0 });
+  send();
+});
+
+// ---- Controls ----
+for (const el of document.querySelectorAll('[data-b]')) {
+  const bit = Number(el.dataset.b);
+  el.onpointerdown = e => {
+    el.setPointerCapture(e.pointerId);
+    el.classList.add('on');
+    state.buttons |= bit;
+    navigator.vibrate?.(8);
+    send();
+  };
+  el.onpointerup = el.onpointercancel = () => {
+    el.classList.remove('on');
+    state.buttons &= ~bit;
+    send();
+  };
+}
+
+// Triggers are analog: the higher up the bar you press, the harder the press.
+for (const el of document.querySelectorAll('[data-t]')) {
+  const fill = el.querySelector('i');
+  const set = v => { state[el.dataset.t] = Math.round(v * 255); fill.style.height = v * 100 + '%'; send(); };
+  const at = e => { const r = el.getBoundingClientRect(); set(Math.min(1, Math.max(0.15, (r.bottom - e.clientY) / r.height))); };
+  el.onpointerdown = e => { el.setPointerCapture(e.pointerId); navigator.vibrate?.(8); at(e); };
+  el.onpointermove = e => el.hasPointerCapture(e.pointerId) && at(e);
+  el.onpointerup = el.onpointercancel = () => set(0);
+}
+
+// Floating stick: centered wherever the thumb lands.
+const zone = $('#stick'), base = $('#base'), knob = $('#knob');
+let origin = null;
+const place = (el, x, y) => { const z = zone.getBoundingClientRect(); el.style.left = x - z.left + 'px'; el.style.top = y - z.top + 'px'; };
+function moveStick(e) {
+  const R = Math.min(innerWidth, innerHeight) * 0.2; // full deflection this far from where the thumb landed
+  let dx = e.clientX - origin.x, dy = e.clientY - origin.y;
+  const d = Math.hypot(dx, dy);
+  if (d > R) { dx *= R / d; dy *= R / d; }
+  state.lx = Math.round(dx / R * 32767);
+  state.ly = Math.round(-dy / R * 32767);
+  place(knob, origin.x + dx, origin.y + dy);
+  send();
+}
+zone.onpointerdown = e => {
+  zone.setPointerCapture(e.pointerId);
+  origin = { x: e.clientX, y: e.clientY, id: e.pointerId };
+  const R = Math.min(innerWidth, innerHeight) * 0.2;
+  base.style.width = base.style.height = 2 * R + 'px';
+  place(base, origin.x, origin.y);
+  base.hidden = knob.hidden = false;
+  moveStick(e);
+};
+zone.onpointermove = e => e.pointerId === origin?.id && moveStick(e);
+zone.onpointerup = zone.onpointercancel = e => {
+  if (e.pointerId !== origin?.id) return;
+  origin = null;
+  base.hidden = knob.hidden = true;
+  state.lx = state.ly = 0;
+  send();
+};
+
+// ---- Full screen (Android; iPhone Safari doesn't allow it for pages) ----
+async function fullscreen() {
+  try {
+    await document.documentElement.requestFullscreen?.({ navigationUI: 'hide' });
+    await screen.orientation?.lock?.('landscape');
+  } catch {}
+}
+$('#fs').onclick = fullscreen;
+$('#start').onclick = () => { $('#start').hidden = true; fullscreen(); };
 </script>
 </body>
 </html>
