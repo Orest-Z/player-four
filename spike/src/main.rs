@@ -49,7 +49,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
     let udp = UdpSocket::bind((ip, 0))?;
     let udp_addr = udp.local_addr()?;
-    let http = TcpListener::bind((ip, 0))?;
+    // Fixed port when free: phones remember their controller mode per address.
+    let http = TcpListener::bind((ip, 47800)).or_else(|_| TcpListener::bind((ip, 0)))?;
     let http_addr = http.local_addr()?;
 
     // Every phone scans the same QR code, so every connection shares one ICE
