@@ -1,0 +1,3 @@
+/target
+# Private key for the phone page's HTTPS certificate: never publish.
+phonepad-tls-*.der

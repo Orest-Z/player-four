@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0b0d10">
 <title>phonepad</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='12' fill='none' stroke='%233b82f6' stroke-width='4'/%3E%3Ccircle cx='16' cy='16' r='3.5' fill='%233b82f6'/%3E%3Cpath d='M5 18h7M20 18h7M16 20v8' stroke='%233b82f6' stroke-width='3'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="src/style.css">
 <script type="module" src="src/main.js"></script>
 </head>
@@ -45,6 +46,10 @@
     <svg class="bars" viewBox="0 0 16 12" aria-hidden="true"><rect x="0" y="8" width="3.5" height="4" rx="1"/><rect x="6" y="4" width="3.5" height="8" rx="1"/><rect x="12" y="0" width="3.5" height="12" rx="1"/></svg>
     <span id="net-text">Connecting</span>
   </span>
+  <div class="seg mini steer-switch" role="group" aria-label="Racing steering">
+    <button data-action="steer" data-value="touch"><svg class="icon"><use href="#i-hand"/></svg><span class="label">Touch</span></button>
+    <button data-action="steer" data-value="tilt"><svg class="icon"><use href="#i-tilt"/></svg><span class="label">Tilt</span></button>
+  </div>
   <span class="spacer"></span>
   <button class="chip" id="mode-btn" aria-label="Change controller"><span id="mode-name">Racing</span><svg class="icon"><use href="#i-chevron"/></svg></button>
   <button class="chip icon-only" id="settings-btn" aria-label="Settings"><svg class="icon"><use href="#i-sliders"/></svg></button>
@@ -55,7 +60,7 @@
 
 <!-- Racing. Touch: the left thumb only steers, the right thumb owns both pedals.
      Tilt: the phone is the wheel, so each thumb gets a pedal and both can press at once. -->
-<main class="mode racing" data-mode="racing" data-steering="touch" hidden>
+<main class="mode racing" data-mode="racing" hidden>
   <section class="layout touch-layout">
     <div class="panel wheel-zone" id="wheel-zone">
       <div class="wheel-wrap"><svg class="wheel" aria-hidden="true"><use href="#g-wheel"/></svg></div>
@@ -64,10 +69,6 @@
     </div>
     <div class="side">
       <div class="cluster">
-        <div class="seg mini" role="group" aria-label="Steering">
-          <button data-action="steer" data-value="touch"><svg class="icon"><use href="#i-hand"/></svg>Touch</button>
-          <button data-action="steer" data-value="tilt"><svg class="icon"><use href="#i-tilt"/></svg>Tilt</button>
-        </div>
         <button class="btn" data-btn="LB">LB</button><button class="btn" data-btn="RB">RB</button>
         <button class="btn x" data-btn="X">X</button><button class="btn y" data-btn="Y">Y</button>
         <button class="btn b" data-btn="B">B</button><button class="btn a" data-btn="A">A</button>
@@ -87,13 +88,7 @@
       <div class="wheel-wrap"><svg class="wheel" aria-hidden="true"><use href="#g-wheel"/></svg></div>
       <div class="steer-meter"><div class="steer-fill"></div><span class="steer-text">Straight</span></div>
       <div class="cluster">
-        <div class="seg mini" role="group" aria-label="Steering">
-          <button data-action="steer" data-value="touch"><svg class="icon"><use href="#i-hand"/></svg>Touch</button>
-          <button data-action="steer" data-value="tilt"><svg class="icon"><use href="#i-tilt"/></svg>Tilt</button>
-        </div>
-        <button class="chip center-btn" data-action="center"><svg class="icon"><use href="#i-center"/></svg>Center</button>
-      </div>
-      <div class="cluster">
+        <button class="chip center-btn" data-action="center" aria-label="Center: make the current tilt straight ahead"><svg class="icon"><use href="#i-center"/></svg>Center</button>
         <button class="btn" data-btn="LB">LB</button><button class="btn" data-btn="RB">RB</button>
         <button class="btn x" data-btn="X">X</button><button class="btn y" data-btn="Y">Y</button>
         <button class="btn b" data-btn="B">B</button><button class="btn a" data-btn="A">A</button>

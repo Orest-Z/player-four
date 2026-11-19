@@ -20,6 +20,7 @@ export function initModes(doc, onChoose) {
   function show(mode) {
     current = mode;
     localStorage.setItem(KEY, mode);
+    doc.body.dataset.mode = mode; // lets mode-specific bits of the top bar show
     for (const m of /** @type {NodeListOf<HTMLElement>} */ (doc.querySelectorAll('main[data-mode]'))) {
       m.hidden = m.dataset.mode !== mode;
     }

@@ -11,7 +11,6 @@ const WHEEL_LOCK_DEG = 135;
  * @param {import('../input/steering.js').Steering} steering
  */
 export function initRacing(doc, steering) {
-  const main = /** @type {HTMLElement} */ (doc.querySelector('main[data-mode="racing"]'));
   const wheels = /** @type {NodeListOf<SVGElement>} */ (doc.querySelectorAll('.wheel'));
   const meters = [...doc.querySelectorAll('.steer-meter')].map(m => ({
     fill: /** @type {HTMLElement} */ (m.querySelector('.steer-fill')),
@@ -42,7 +41,7 @@ export function initRacing(doc, steering) {
   return {
     /** @param {import('../input/steering.js').SteeringKind} kind */
     showSteering(kind) {
-      main.dataset.steering = kind;
+      doc.body.dataset.steering = kind; // picks the layout and lights the top-bar switch
       value = 0;
       draw();
     },
