@@ -4,7 +4,7 @@
 import { openPhone, sleep, W, H } from './phone.mjs';
 
 const [url, out] = process.argv.slice(2);
-const { cdp, connect, js, rect, click, touch, tilt, screen, shot, xinput, check, finish } = await openPhone(out, 9336);
+const { cdp, connect, js, rect, click, touch, tilt, screen, shot, xinput, rumble, check, finish } = await openPhone(out, 9336);
 
 // 1. Through the certificate warning, as a person would ("Advanced", "Proceed").
 await connect(url);
@@ -92,7 +92,19 @@ await click('.sheet .done');
 await sleep(200);
 check('settings closes', await js('document.querySelector("#settings").hidden'));
 
-// 5. The other layouts.
+// 5. Rumble: a game shakes controller 1 and the phone vibrates, again and again while it lasts,
+// harder for stronger rumble, until the game stops. Every vibration the phone makes is logged.
+await js('window.buzzes = []; navigator.vibrate = p => (window.buzzes.push(p), true); true');
+rumble('65535:0:700', '16000:8000:700', '0:0:200'); // full, lighter, off
+await sleep(300);
+const buzzes = JSON.parse(await js('JSON.stringify(window.buzzes)'));
+const solid = buzzes.filter(b => b === 250), pulses = buzzes.filter(Array.isArray);
+const shown = JSON.stringify(buzzes.map(b => (Array.isArray(b) ? b.slice(0, 2) : b)));
+check('rumble: full rumble buzzes solidly, again and again while it lasts', solid.length >= 4, shown);
+check('rumble: lighter rumble buzzes in shorter pulses', pulses.length >= 4 && pulses.every(p => p[0] === 15 && p[1] === 25));
+check('rumble: in the order the game asked, then stops', buzzes.indexOf(250) < buzzes.findIndex(Array.isArray) && buzzes.at(-1) === 0);
+
+// 6. The other layouts.
 for (const mode of ['party', 'retro', 'full']) {
   await click('#mode-btn');
   await sleep(150);
@@ -105,7 +117,7 @@ check('leaving racing turns tilt off (stick stays centered)', /LX=0 /.test(x), x
 
 check('steering switch hidden outside racing', await js('getComputedStyle(document.querySelector(".steer-switch")).display === "none"'));
 
-// 6. A small phone (740×360): racing in both steering modes and the picker must still fit.
+// 7. A small phone (740×360): racing in both steering modes and the picker must still fit.
 await screen(740, 360, 'landscapePrimary', 90);
 await click('#mode-btn');
 await sleep(200);
@@ -118,7 +130,7 @@ await sleep(300);
 await shot('8-small-racing-touch');
 check('small phone: nothing spills past the screen', await js('[...document.querySelectorAll("main:not([hidden]) *, .bar *")].every(e => { const r = e.getBoundingClientRect(); return r.width === 0 || (r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1); })'));
 
-// 7. Portrait shows the rotate prompt.
+// 8. Portrait shows the rotate prompt.
 await screen(H, W, 'portraitPrimary', 0);
 await sleep(300);
 await shot('7-portrait');

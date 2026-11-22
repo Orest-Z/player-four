@@ -5,7 +5,7 @@ import { connect } from './link/link.js';
 import { bindButtons, bindTriggers, bindSticks, bindDpads } from './input/touch.js';
 import { bindPedals, configurePedals } from './input/pedals.js';
 import { createSteering } from './input/steering.js';
-import { setHaptics, canVibrate } from './input/haptics.js';
+import { setHaptics, setRumble, rumble, canVibrate } from './input/haptics.js';
 import { initShell } from './screens/shell.js';
 import { initModes } from './screens/modes.js';
 import { initRacing } from './screens/racing.js';
@@ -34,6 +34,7 @@ function applySettings() {
   });
   configurePedals({ analog: settings.pedals === 'analog' });
   setHaptics(settings.haptics);
+  setRumble(settings.rumble);
   shell.setColor(settings.color);
   document.body.dataset.pedals = settings.pedals;
 }
@@ -98,9 +99,9 @@ for (const el of document.querySelectorAll('[data-action="center"]')) {
 if (!canVibrate()) {
   const row = document.querySelector('#haptics-row');
   row?.classList.add('disabled');
-  row?.querySelector('input')?.setAttribute('disabled', '');
-  const note = row?.querySelector('.note');
-  if (note) note.textContent = "This phone's browser doesn't support vibration.";
+  for (const input of row?.querySelectorAll('input') ?? []) input.setAttribute('disabled', '');
+  for (const note of row?.querySelectorAll('.note') ?? []) note.remove();
+  row?.insertAdjacentHTML('beforeend', `<p class="note">This phone's browser can't vibrate. iPhones don't let web pages vibrate at all.</p>`);
 }
 
 applySettings();
@@ -142,6 +143,7 @@ try {
       shell.setLatency(ms);
       shell.setPlayer(player);
     },
+    onRumble: rumble,
     // "<doing> <color or -> <name>", read by the PC's window (pc/src/main.rs, drive()).
     about() {
       const doing = !document.querySelector('#picker')?.hasAttribute('hidden') ? 'picking'

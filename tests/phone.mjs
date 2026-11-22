@@ -49,6 +49,8 @@ export async function openPhone(out, port = 9336) {
     shot: async name => writeFileSync(join(out, `${name}.png`), Buffer.from((await cdp('Page.captureScreenshot')).result.data, 'base64')),
     /** Controller 1 as Windows sees it, e.g. "controller 1: buttons=0x0000 LT=0 RT=255 LX=16384 LY=0". */
     xinput: () => execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(import.meta.dirname, 'xinput.ps1')]).toString().trim().split('\n')[0].trim(),
+    /** Rumbles controller 1 the way a game does. Steps are 'left:right:ms', motors 0-65535. */
+    rumble: (...steps) => execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(import.meta.dirname, 'xinput.ps1'), 'rumble', ...steps]),
     check(label, ok, detail = '') {
       if (!ok) failures++;
       console.log(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? '  -> ' + detail : ''}`);

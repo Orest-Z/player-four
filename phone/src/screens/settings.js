@@ -21,6 +21,8 @@ export const DEFAULTS = Object.freeze({
   /** @type {'analog' | 'full'} */
   pedals: 'analog',
   haptics: true,
+  /** Shake the phone when the game rumbles the controller. */
+  rumble: true,
 });
 /** @typedef {{ -readonly [K in keyof typeof DEFAULTS]: (typeof DEFAULTS)[K] }} Settings */
 

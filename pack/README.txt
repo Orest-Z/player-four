@@ -44,6 +44,7 @@ PLAY
 4. Pick a layout: Racing, Party, Retro or Full pad. Then play!
 
 On the phone, Settings lets each player set their name and color.
+Android phones shake when the game rumbles the controller.
 
 
 GOOD TO KNOW

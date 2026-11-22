@@ -9,15 +9,16 @@ mod ui;
 use std::error::Error;
 use std::fs;
 use std::io::{self, ErrorKind, Read, Write};
-use std::net::{IpAddr, SocketAddr, TcpListener, UdpSocket};
+use std::net::{IpAddr, TcpListener, UdpSocket};
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicU16, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use rustls::ServerConfig;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
-use str0m::channel::{ChannelConfig, Reliability};
+use str0m::channel::{ChannelConfig, ChannelId, Reliability};
 use str0m::config::Fingerprint;
 use str0m::ice::StunMessage;
 use str0m::net::{Protocol, Receive};
@@ -32,6 +33,9 @@ const MAX_PLAYERS: usize = 4;
 /// gets its controller reset to neutral, so nobody's truck keeps accelerating.
 /// Phones send a heartbeat every 100 ms.
 const STALE: Duration = Duration::from_millis(500);
+/// While a game rumbles, the phone is told again this often: each message only buzzes it
+/// briefly (phone/src/input/haptics.js), and any message may be lost.
+const RUMBLE_REPEAT: Duration = Duration::from_millis(100);
 
 /// What the window shows. The host thread keeps it current.
 #[derive(Clone, Default)]
@@ -73,6 +77,12 @@ struct Player {
     last_seq: Option<u16>,
     last_input: Instant,
     view: PlayerView,
+    /// The data channel, once open: inputs come in on it, pongs and rumble go out.
+    channel: Option<ChannelId>,
+    /// The game's rumble, large motor << 8 | small motor, set by the driver's thread.
+    rumble: Arc<AtomicU16>,
+    /// What the phone was last told, and when.
+    rumble_sent: (u16, Instant),
 }
 
 fn main() -> eframe::Result {
@@ -178,6 +188,7 @@ fn host(shared: &Mutex<Shared>) -> Result<(), Box<dyn Error>> {
         let now = Instant::now();
         let mut next = now + Duration::from_millis(100);
         for p in &mut players {
+            p.send_rumble(now, &mut next); // before drive(), which sends it
             if let Err(e) = drive(p, &udp, &mut next) {
                 println!("Player {}: {e}", p.view.number);
                 p.rtc.disconnect();
@@ -214,7 +225,7 @@ fn host(shared: &Mutex<Shared>) -> Result<(), Box<dyn Error>> {
             // Lowest free number, the same rule Windows uses for XInput slots.
             // ponytail: ViGEm's get_user_index reported 0 for every pad here; revisit if numbers drift from the game's.
             let number = (1..).find(|n| players.iter().all(|p| p.view.number != *n)).unwrap();
-            match join(&config, udp_addr, phone_ufrag, &vigem, number) {
+            match join(&config, &udp, phone_ufrag, &vigem, number) {
                 Ok(mut p) => {
                     println!("Player {} joined from {source}.", p.view.number);
                     let _ = p.rtc.handle_input(input);
@@ -251,7 +262,8 @@ fn new_phone(data: &[u8], creds: &IceCreds, hmac: impl Fn(&[u8], &[&[u8]]) -> [u
 }
 
 /// A connection plus a freshly plugged-in virtual Xbox controller for one phone.
-fn join(config: &RtcConfig, local: SocketAddr, phone_ufrag: String, vigem: &Rc<Client>, number: u32) -> Result<Player, Box<dyn Error>> {
+fn join(config: &RtcConfig, udp: &UdpSocket, phone_ufrag: String, vigem: &Rc<Client>, number: u32) -> Result<Player, Box<dyn Error>> {
+    let local = udp.local_addr()?;
     let mut rtc = config.clone().build(Instant::now());
     rtc.add_local_candidate(Candidate::host(local, "udp")?).ok_or("host candidate")?;
     let mut api = rtc.direct_api();
@@ -275,7 +287,28 @@ fn join(config: &RtcConfig, local: SocketAddr, phone_ufrag: String, vigem: &Rc<C
     let mut pad = Xbox360Wired::new(vigem.clone(), TargetId::XBOX360_WIRED);
     pad.plugin().map_err(|e| format!("plug in controller: {e:?}"))?;
     pad.wait_ready().map_err(|e| format!("controller ready: {e:?}"))?;
-    Ok(Player { rtc, pad, last_seq: None, last_input: Instant::now(), view: PlayerView { number, ..Default::default() } })
+
+    // The driver reports the game's rumble on its own thread, which ends when the
+    // controller is unplugged. A byte to our own socket wakes the main loop, so the
+    // phone hears about it now rather than at the next packet.
+    let rumble = Arc::new(AtomicU16::new(0));
+    let (motors, wake) = (rumble.clone(), udp.try_clone()?);
+    let notifications = pad.request_notification().map_err(|e| format!("rumble: {e:?}"))?;
+    notifications.spawn_thread(move |_, n| {
+        motors.store(u16::from(n.large_motor) << 8 | u16::from(n.small_motor), Ordering::Relaxed);
+        let _ = wake.send_to(&[0], local);
+    });
+
+    Ok(Player {
+        rtc,
+        pad,
+        last_seq: None,
+        last_input: Instant::now(),
+        view: PlayerView { number, ..Default::default() },
+        channel: None,
+        rumble,
+        rumble_sent: (0, Instant::now()),
+    })
 }
 
 /// Runs one phone's connection until it has nothing to do before `next`.
@@ -294,7 +327,8 @@ fn drive(p: &mut Player, udp: &UdpSocket, next: &mut Instant) -> Result<(), Box<
                 p.rtc.disconnect();
                 return Ok(());
             }
-            Output::Event(Event::ChannelOpen(..)) => {
+            Output::Event(Event::ChannelOpen(id, _)) => {
+                p.channel = Some(id);
                 p.view.open = true;
                 println!("Player {} connected.", p.view.number);
             }
@@ -325,6 +359,22 @@ fn drive(p: &mut Player, udp: &UdpSocket, next: &mut Instant) -> Result<(), Box<
 }
 
 impl Player {
+    /// Passes the game's rumble to the phone: right away when it changes, and again
+    /// every RUMBLE_REPEAT while it lasts. "r <large motor> <small motor>", 0-255 each.
+    fn send_rumble(&mut self, now: Instant, next: &mut Instant) {
+        let motors = self.rumble.load(Ordering::Relaxed);
+        let (sent, at) = self.rumble_sent;
+        if motors != sent || (motors != 0 && now - at >= RUMBLE_REPEAT) {
+            if let Some(mut chan) = self.channel.and_then(|id| self.rtc.channel(id)) {
+                let _ = chan.write(false, format!("r {} {}", motors >> 8, motors & 0xff).as_bytes());
+                self.rumble_sent = (motors, now);
+            }
+        }
+        if motors != 0 {
+            *next = (*next).min(self.rumble_sent.1 + RUMBLE_REPEAT); // wake up for the repeat
+        }
+    }
+
     /// One state packet from the phone: seq u16, then XInput's own layout
     /// (buttons u16, LT u8, RT u8, LX LY RX RY i16), all little-endian.
     fn apply(&mut self, packet: &[u8]) {

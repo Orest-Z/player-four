@@ -10,8 +10,14 @@ const CONNECT_TIMEOUT_MS = 12000;
 
 /**
  * @param {string} hash location.hash from the QR code's link
- * @param {{ onStatus(status: LinkStatus): void, onPong(rttMs: number, player: number): void, about(): string }} on
- *   about() describes this phone for the PC's window: what it's doing, its color and its name
+ * @param {{
+ *   onStatus(status: LinkStatus): void,
+ *   onPong(rttMs: number, player: number): void,
+ *   onRumble(large: number, small: number): void,
+ *   about(): string,
+ * }} on
+ *   about() describes this phone for the PC's window: what it's doing, its color and its name.
+ *   onRumble() gets the game's rumble motors, 0-255 each.
  * @returns {Promise<{ send(packet: ArrayBuffer): void }>}
  */
 export async function connect(hash, on) {
@@ -49,9 +55,10 @@ export async function connect(hash, on) {
     pings = setInterval(() => dc.readyState === 'open' && ping(), 500);
   };
   dc.onmessage = e => {
-    const [, sent, player] = String(e.data).split(' ');
-    rtt = performance.now() - Number(sent);
-    on.onPong(rtt, Number(player));
+    const [kind, a, b] = String(e.data).split(' ');
+    if (kind === 'r') return on.onRumble(Number(a), Number(b)); // "r <large motor> <small motor>"
+    rtt = performance.now() - Number(a); // "p <sent> <player number>"
+    on.onPong(rtt, Number(b));
   };
   pc.onconnectionstatechange = () => {
     const s = pc.connectionState;

@@ -30,6 +30,8 @@ games, for free.
   Xbox 360 controller. Games see real controllers, so there's nothing to set up in the game.
 - **Racing that feels right.** Steer by tilting the phone or with a touch wheel, and press
   gas and brake as gently or as hard as you like.
+- **Feel the game.** When a game rumbles the controller, the phone shakes too, harder for
+  stronger rumble (Android: iPhones don't let web pages vibrate).
 - **A layout for every game.** Racing, Party (one stick, four big buttons), Retro (D-pad)
   and a Full pad with every button.
 - **Built for low latency.** Phone and PC talk directly over your Wi-Fi. There's no server
@@ -217,7 +219,7 @@ It needs Node 22+, Chrome and ViGEmBus.
 - [x] PC window with tray icon
 - [x] Player names and colors
 - [x] One-file download
-- [ ] Phone vibrates when the game rumbles
+- [x] Phone vibrates when the game rumbles (Android)
 - [ ] Tells you when there's a new version
 - [ ] Linux and Steam Deck
 
