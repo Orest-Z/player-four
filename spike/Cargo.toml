@@ -3,11 +3,14 @@ name = "player-four"
 version = "0.1.0"
 edition = "2024"
 
-# Throwaway spike: proves phone browser -> PC WebRTC with no signaling server.
+# The PC side: phones become virtual Xbox controllers, with a small window and tray icon.
 [dependencies]
-qrcode = { version = "0.14.1", default-features = false, features = ["svg"] }
+eframe = { version = "0.37.0", default-features = false, features = ["glow", "default_fonts", "links"] }
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+qrcode = { version = "0.14.1", default-features = false }
 rcgen = { version = "0.14.10", default-features = false, features = ["ring"] }
 rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"] }
 # rust-crypto: pure Rust, so no C toolchain or OpenSSL needed to build.
 str0m = { version = "0.25.0", default-features = false, features = ["rust-crypto"] }
+tray-icon = "0.26.1"
 vigem-client = "0.1.4"

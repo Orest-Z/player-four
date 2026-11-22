@@ -10,7 +10,8 @@ const CONNECT_TIMEOUT_MS = 12000;
 
 /**
  * @param {string} hash location.hash from the QR code's link
- * @param {{ onStatus(status: LinkStatus): void, onPong(rttMs: number, player: number): void }} on
+ * @param {{ onStatus(status: LinkStatus): void, onPong(rttMs: number, player: number): void, about(): string }} on
+ *   about() describes what this phone is doing (e.g. "racing tilt"), for the PC's window
  * @returns {Promise<{ send(packet: ArrayBuffer): void }>}
  */
 export async function connect(hash, on) {
@@ -37,17 +38,20 @@ export async function connect(hash, on) {
     `a=candidate:1 1 udp 2130706431 ${ip} ${port} typ host`, 'a=end-of-candidates', '',
   ].join('\r\n') });
 
-  let pings = 0;
+  let pings = 0, rtt = -1;
   const giveUp = setTimeout(() => { if (dc.readyState !== 'open') { pc.close(); on.onStatus('lost'); } }, CONNECT_TIMEOUT_MS);
   dc.onopen = () => {
     clearTimeout(giveUp);
     on.onStatus('open');
-    // The PC echoes each ping with our player number: latency and identity in one.
-    pings = setInterval(() => dc.readyState === 'open' && dc.send('p ' + performance.now()), 500);
+    // "p <sent> <last round trip ms> <what we're doing>". The PC echoes "p <sent> <player number>":
+    // latency and identity in one, and the PC's window learns ours.
+    const ping = () => dc.send(`p ${performance.now()} ${rtt < 0 ? '-' : Math.round(rtt)} ${on.about()}`);
+    pings = setInterval(() => dc.readyState === 'open' && ping(), 500);
   };
   dc.onmessage = e => {
     const [, sent, player] = String(e.data).split(' ');
-    on.onPong(performance.now() - Number(sent), Number(player));
+    rtt = performance.now() - Number(sent);
+    on.onPong(rtt, Number(player));
   };
   pc.onconnectionstatechange = () => {
     const s = pc.connectionState;

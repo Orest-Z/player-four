@@ -1,5 +1,10 @@
-﻿//! Throwaway spike 2: up to 4 phones become virtual Xbox 360 controllers, all
+//! Player Four's PC side: up to 4 phones become virtual Xbox 360 controllers, all
 //! from one QR code. Phone browser -> PC over WebRTC with no signaling server.
+//! The window (ui.rs) owns the main thread; phones and controllers run on their own
+//! thread, so drawing never delays a button press.
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // no console window
+
+mod ui;
 
 use std::error::Error;
 use std::fs;
@@ -7,11 +12,9 @@ use std::io::{self, ErrorKind, Read, Write};
 use std::net::{IpAddr, SocketAddr, TcpListener, UdpSocket};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use qrcode::QrCode;
-use qrcode::render::{svg, unicode};
 use rustls::ServerConfig;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use str0m::channel::{ChannelConfig, Reliability};
@@ -34,6 +37,34 @@ const MAX_PLAYERS: usize = 4;
 /// Phones send a heartbeat every 100 ms.
 const STALE: Duration = Duration::from_millis(500);
 
+/// What the window shows. The host thread keeps it current.
+#[derive(Clone, Default)]
+pub struct Shared {
+    /// The QR code's link, once phones can connect.
+    pub url: Option<String>,
+    pub problem: Option<Problem>,
+    pub players: Vec<PlayerView>,
+}
+
+#[derive(Clone)]
+pub enum Problem {
+    /// ViGEmBus isn't installed, so there are no controllers to give phones.
+    NoDriver,
+    Failed(String),
+}
+
+#[derive(Clone)]
+pub struct PlayerView {
+    pub number: u32,
+    /// Inputs are flowing.
+    pub open: bool,
+    /// Round trip as the phone last measured it.
+    pub rtt_ms: Option<u32>,
+    /// What the phone says it's doing, e.g. "racing tilt" (phone/src/main.js).
+    pub mode: String,
+    pub pad: XGamepad,
+}
+
 struct Player {
     rtc: Rtc,
     pad: Xbox360Wired<Rc<Client>>,
@@ -42,20 +73,38 @@ struct Player {
     last_seq: Option<u16>,
     last_input: Instant,
     state: XGamepad,
+    open: bool,
+    rtt_ms: Option<u32>,
+    mode: String,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> eframe::Result {
+    if ui::already_running() {
+        println!("Player Four is already running: showing its window.");
+        return Ok(());
+    }
+    let shared = Arc::new(Mutex::new(Shared::default()));
+    let host_shared = shared.clone();
+    std::thread::spawn(move || {
+        if let Err(e) = host(&host_shared) {
+            println!("Stopped: {e}");
+            host_shared.lock().unwrap().problem = Some(Problem::Failed(e.to_string()));
+            ui::wake();
+        }
+    });
+    ui::run(shared)
+}
+
+/// Phones in, controllers out. Runs until the app quits.
+fn host(shared: &Mutex<Shared>) -> Result<(), Box<dyn Error>> {
     let crypto = str0m::crypto::from_feature_flags();
-    let cert = crypto.dtls_provider.generate_certificate().expect("DTLS certificate");
+    let cert = crypto.dtls_provider.generate_certificate().ok_or("couldn't make a DTLS certificate")?;
     let hmac = crypto.sha1_hmac_provider;
     crypto.install_process_default();
-    let vigem = Rc::new(Client::connect().map_err(|e| {
-        format!("ViGEmBus driver not found ({e:?}); install it from github.com/nefarius/ViGEmBus/releases")
-    })?);
 
     let ip = match std::env::args().nth(1) {
-        Some(arg) => arg.parse().expect("usage: player-four [pc-wifi-ip]"),
-        None => lan_ip(),
+        Some(arg) => arg.parse().map_err(|_| "usage: player-four [pc-wifi-ip]")?,
+        None => lan_ip()?,
     };
     let udp = UdpSocket::bind((ip, 0))?;
     let udp_addr = udp.local_addr()?;
@@ -84,24 +133,30 @@ fn main() -> Result<(), Box<dyn Error>> {
         .collect();
 
     let tls = tls_config(ip)?;
-
     let url = format!(
         "https://{http_addr}/#u={}&p={}&f={fingerprint}&a={udp_addr}",
         creds.ufrag, creds.pass
     );
-    let qr = QrCode::new(&url)?;
-    // Inverted so it scans on a dark terminal: light modules are drawn as blocks.
-    let text_qr = qr
-        .render::<unicode::Dense1x2>()
-        .dark_color(unicode::Dense1x2::Light)
-        .light_color(unicode::Dense1x2::Dark)
-        .build();
-    std::fs::write("qr.svg", qr.render::<svg::Color>().min_dimensions(320, 320).build())?;
-    println!("\nPLAYER FOUR - scan with your phone's camera to play.\n{text_qr}\nUp to {MAX_PLAYERS} phones on the same Wi-Fi can scan this.");
-    println!("QR won't scan? Open qr.svg in this folder instead.\n{url}\n");
-    println!("First time on each phone the browser warns about the certificate (it's this PC's own):");
-    println!("  Android Chrome: Advanced -> Proceed to {ip} (unsafe)");
-    println!("  iPhone Safari:  Show Details -> visit this website\n");
+
+    // ViGEmBus makes the virtual controllers. Until it's installed there's nothing
+    // to play with: the window says how to get it, and we carry on once it's there.
+    let vigem = loop {
+        match Client::connect() {
+            Ok(client) => break Rc::new(client),
+            Err(_) => {
+                shared.lock().unwrap().problem = Some(Problem::NoDriver);
+                ui::wake();
+                std::thread::sleep(Duration::from_secs(2));
+            }
+        }
+    };
+    {
+        let mut s = shared.lock().unwrap();
+        s.problem = None;
+        s.url = Some(url.clone());
+    }
+    ui::wake();
+    println!("Player Four is ready: {url}"); // tests/run.mjs reads the link from here
 
     std::thread::spawn(move || {
         for tcp in http.incoming().flatten() {
@@ -139,6 +194,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             println!("Player {} left.", p.number);
         }
         players.retain(|p| p.rtc.is_alive()); // dropping a Player unplugs its controller
+        publish(shared, &players);
 
         udp.set_read_timeout(Some(next.saturating_duration_since(Instant::now()).max(Duration::from_millis(1))))?;
         let (n, source) = match udp.recv_from(&mut buf) {
@@ -170,6 +226,24 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Err(e) => println!("A phone couldn't join: {e}"),
             }
         }
+    }
+}
+
+/// Hands the window a fresh copy of every player. Wakes it only for what it doesn't
+/// animate on its own (someone joining, leaving, or switching layout), so a hidden
+/// window costs nothing while people play.
+fn publish(shared: &Mutex<Shared>, players: &[Player]) {
+    let views: Vec<PlayerView> = players
+        .iter()
+        .map(|p| PlayerView { number: p.number, open: p.open, rtt_ms: p.rtt_ms, mode: p.mode.clone(), pad: p.state })
+        .collect();
+    let mut s = shared.lock().unwrap();
+    let changed = s.players.len() != views.len()
+        || s.players.iter().zip(&views).any(|(a, b)| (a.number, a.open, &a.mode) != (b.number, b.open, &b.mode));
+    s.players = views;
+    drop(s);
+    if changed {
+        ui::wake();
     }
 }
 
@@ -206,7 +280,17 @@ fn join(config: &RtcConfig, local: SocketAddr, phone_ufrag: String, vigem: &Rc<C
     let mut pad = Xbox360Wired::new(vigem.clone(), TargetId::XBOX360_WIRED);
     pad.plugin().map_err(|e| format!("plug in controller: {e:?}"))?;
     pad.wait_ready().map_err(|e| format!("controller ready: {e:?}"))?;
-    Ok(Player { rtc, pad, number, last_seq: None, last_input: Instant::now(), state: XGamepad::default() })
+    Ok(Player {
+        rtc,
+        pad,
+        number,
+        last_seq: None,
+        last_input: Instant::now(),
+        state: XGamepad::default(),
+        open: false,
+        rtt_ms: None,
+        mode: String::new(),
+    })
 }
 
 /// Runs one phone's connection until it has nothing to do before `next`.
@@ -225,12 +309,24 @@ fn drive(p: &mut Player, udp: &UdpSocket, next: &mut Instant) -> Result<(), Box<
                 p.rtc.disconnect();
                 return Ok(());
             }
-            Output::Event(Event::ChannelOpen(..)) => println!("Player {} connected.", p.number),
+            Output::Event(Event::ChannelOpen(..)) => {
+                p.open = true;
+                println!("Player {} connected.", p.number);
+            }
             Output::Event(Event::ChannelData(d)) if d.binary => p.apply(&d.data),
             Output::Event(Event::ChannelData(d)) => {
-                // Ping: echo it with the player number, so the phone can time the
-                // round trip and show which player it is.
-                let reply = format!("{} {}", String::from_utf8_lossy(&d.data), p.number);
+                // Ping: "p <sent> <round trip ms, or -> <what the phone is doing>". Echo
+                // "p <sent> <player number>", so the phone can time the round trip and
+                // show which player it is.
+                let text = String::from_utf8_lossy(&d.data);
+                let mut words = text.split(' ');
+                if words.next() != Some("p") {
+                    continue;
+                }
+                let sent = words.next().unwrap_or("0");
+                p.rtt_ms = words.next().and_then(|w| w.parse().ok());
+                p.mode = words.collect::<Vec<_>>().join(" ").chars().take(32).collect();
+                let reply = format!("p {sent} {}", p.number);
                 if let Some(mut chan) = p.rtc.channel(d.id) {
                     chan.write(false, reply.as_bytes())?;
                 }
@@ -363,9 +459,9 @@ fn resolve_stays_inside_root() {
 
 /// The PC's address on the local network: asks the OS which interface routes
 /// outward. Connecting a UDP socket sends nothing.
-fn lan_ip() -> IpAddr {
-    let s = UdpSocket::bind("0.0.0.0:0").expect("UDP socket");
+fn lan_ip() -> io::Result<IpAddr> {
+    let s = UdpSocket::bind("0.0.0.0:0")?;
     s.connect("8.8.8.8:80")
-        .expect("no network route; pass the PC's Wi-Fi IP as the first argument");
-    s.local_addr().expect("local address").ip()
+        .map_err(|_| io::Error::other("This PC isn't on a network. Connect it to Wi-Fi, then reopen Player Four."))?;
+    Ok(s.local_addr()?.ip())
 }

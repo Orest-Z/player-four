@@ -141,6 +141,10 @@ try {
       shell.setLatency(ms);
       shell.setPlayer(player);
     },
+    about: () =>
+      !document.querySelector('#picker')?.hasAttribute('hidden') ? 'picking'
+      : modes.current === 'racing' ? `racing ${steering.kind}`
+      : modes.current,
   });
   setInterval(changed, HEARTBEAT_MS);
 } catch (e) {
