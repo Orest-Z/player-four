@@ -1,7 +1,7 @@
 // @ts-check
 // The controller picker and which layout is showing. Each phone remembers its own choice.
 
-const KEY = 'phonepad.mode';
+const KEY = 'playerfour.mode';
 export const MODES = /** @type {const} */ (['racing', 'party', 'retro', 'full']);
 /** @typedef {typeof MODES[number]} Mode */
 

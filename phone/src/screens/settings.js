@@ -2,7 +2,7 @@
 // Settings: defaults, saving per phone, and the settings sheet. Every form control in the
 // sheet is named after the setting it edits.
 
-const KEY = 'phonepad.settings';
+const KEY = 'playerfour.settings';
 
 export const DEFAULTS = Object.freeze({
   /** @type {'touch' | 'tilt'} */

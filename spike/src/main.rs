@@ -25,8 +25,8 @@ use vigem_client::{Client, TargetId, XButtons, XGamepad, Xbox360Wired};
 /// ponytail: only works next to the source tree; embed the files for release builds.
 const WEB_ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../phone");
 /// Saved next to where we run, so a phone's "proceed anyway" survives restarts.
-const TLS_CERT: &str = "phonepad-tls-cert.der";
-const TLS_KEY: &str = "phonepad-tls-key.der";
+const TLS_CERT: &str = "playerfour-tls-cert.der";
+const TLS_KEY: &str = "playerfour-tls-key.der";
 /// XInput's limit.
 const MAX_PLAYERS: usize = 4;
 /// A phone that goes quiet this long (screen locked, browser in the background)
@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     })?);
 
     let ip = match std::env::args().nth(1) {
-        Some(arg) => arg.parse().expect("usage: phonepad-spike [pc-wifi-ip]"),
+        Some(arg) => arg.parse().expect("usage: player-four [pc-wifi-ip]"),
         None => lan_ip(),
     };
     let udp = UdpSocket::bind((ip, 0))?;
@@ -97,7 +97,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .light_color(unicode::Dense1x2::Dark)
         .build();
     std::fs::write("qr.svg", qr.render::<svg::Color>().min_dimensions(320, 320).build())?;
-    println!("\n{text_qr}\nUp to {MAX_PLAYERS} phones on the same Wi-Fi can scan this.");
+    println!("\nPLAYER FOUR - scan with your phone's camera to play.\n{text_qr}\nUp to {MAX_PLAYERS} phones on the same Wi-Fi can scan this.");
     println!("QR won't scan? Open qr.svg in this folder instead.\n{url}\n");
     println!("First time on each phone the browser warns about the certificate (it's this PC's own):");
     println!("  Android Chrome: Advanced -> Proceed to {ip} (unsafe)");

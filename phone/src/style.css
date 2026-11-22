@@ -1,4 +1,4 @@
-/* phonepad: dark, high-contrast, thumb-sized. Sizes follow the viewport so one layout fits any phone in landscape. */
+/* Player Four: dark, high-contrast, thumb-sized. Sizes follow the viewport so one layout fits any phone in landscape. */
 
 :root {
   --p: #8a8f98; /* player color, set once the PC tells us our number */
@@ -220,6 +220,12 @@ body[data-pedals="full"] .pedal .tick, body[data-pedals="full"] .pedal::before {
 .overlay h1 { margin: 0; font-size: clamp(18px, 5vh, 26px); }
 .overlay p { margin: 0; max-width: 34em; color: var(--muted); font-weight: 500; line-height: 1.45; }
 .status { z-index: 40; }
+.brand { display: flex; align-items: center; gap: .8em; margin-bottom: 2vh; font-size: 13px; font-weight: 900; letter-spacing: .24em; text-transform: uppercase; }
+.dots { display: flex; gap: 4px; }
+.dots i { width: 8px; height: 8px; border-radius: 50%; background: #3b82f6; } /* the four player colors */
+.dots i:nth-child(2) { background: #f97316; }
+.dots i:nth-child(3) { background: #a855f7; }
+.dots i:nth-child(4) { background: #eab308; }
 .big-icon { width: 54px; height: 54px; color: var(--muted); stroke-width: 1.6; }
 .primary { padding: .85em 2.2em; border-radius: 999px; background: var(--p); color: #0b0d10; font-weight: 800; }
 .spinner { width: 42px; height: 42px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .1); border-top-color: var(--p); animation: spin .9s linear infinite; }
