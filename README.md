@@ -78,6 +78,97 @@ If Windows SmartScreen warns about the installer, it's safe to continue (**More 
 anyway**) as long as you downloaded it from the GitHub page above. Already using
 DS4Windows? Then you have the driver.
 
+## What to play
+
+Anything that works with an Xbox controller works with Player Four. Here are ten favorites for
+each layout. "Couch" means several phones can play together on one PC.
+
+### Racing
+
+Steer by tilting the phone or with the touch wheel, with analog gas and brake.
+
+<table>
+<tr>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/284160/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/284160/capsule_231x87.jpg" width="150" alt="BeamNG.drive"></a><br><sub><b>BeamNG.drive</b><br>Couch co-op</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/227300/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/227300/capsule_231x87.jpg" width="150" alt="Euro Truck Simulator 2"></a><br><sub><b>Euro Truck Simulator 2</b><br>Solo</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/1551360/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1551360/capsule_231x87.jpg" width="150" alt="Forza Horizon 5"></a><br><sub><b>Forza Horizon 5</b><br>Solo</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/2225070/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/2225070/capsule_231x87.jpg" width="150" alt="Trackmania"></a><br><sub><b>Trackmania</b><br>Couch versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/252950/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/252950/capsule_231x87.jpg" width="150" alt="Rocket League"></a><br><sub><b>Rocket League</b><br>Couch co-op & versus</sub></td>
+</tr>
+<tr>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/1271700/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1271700/capsule_231x87.jpg" width="150" alt="Hot Wheels Unleashed"></a><br><sub><b>Hot Wheels Unleashed</b><br>Couch versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/785260/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/785260/capsule_231x87.jpg" width="150" alt="Team Sonic Racing"></a><br><sub><b>Team Sonic Racing</b><br>Couch versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/1038250/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1038250/capsule_231x87.jpg" width="150" alt="DIRT 5"></a><br><sub><b>DIRT 5</b><br>Couch co-op & versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/389140/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/389140/capsule_231x87.jpg" width="150" alt="Horizon Chase Turbo"></a><br><sub><b>Horizon Chase Turbo</b><br>Couch versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/1238080/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1238080/capsule_231x87.jpg" width="150" alt="Burnout Paradise Remastered"></a><br><sub><b>Burnout Paradise Remastered</b><br>Take turns</sub></td>
+</tr>
+</table>
+
+### Party
+
+One big stick and big buttons: easy for anyone, even people who never play.
+
+<table>
+<tr>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/728880/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/728880/capsule_231x87.jpg" width="150" alt="Overcooked! 2"></a><br><sub><b>Overcooked! 2</b><br>Couch co-op & versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/996770/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/996770/capsule_231x87.jpg" width="150" alt="Moving Out"></a><br><sub><b>Moving Out</b><br>Couch co-op</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/285900/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/285900/capsule_231x87.jpg" width="150" alt="Gang Beasts"></a><br><sub><b>Gang Beasts</b><br>Couch versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/477160/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/477160/capsule_231x87.jpg" width="150" alt="Human Fall Flat"></a><br><sub><b>Human Fall Flat</b><br>Couch co-op</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/1509960/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1509960/capsule_231x87.jpg" width="150" alt="PICO PARK"></a><br><sub><b>PICO PARK</b><br>Couch co-op</sub></td>
+</tr>
+<tr>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/386940/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/386940/capsule_231x87.jpg" width="150" alt="Ultimate Chicken Horse"></a><br><sub><b>Ultimate Chicken Horse</b><br>Couch co-op & versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/674940/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/674940/capsule_231x87.jpg" width="150" alt="Stick Fight: The Game"></a><br><sub><b>Stick Fight: The Game</b><br>Couch versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/312530/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/312530/capsule_231x87.jpg" width="150" alt="Duck Game"></a><br><sub><b>Duck Game</b><br>Couch versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/965680/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/965680/capsule_231x87.jpg" width="150" alt="Boomerang Fu"></a><br><sub><b>Boomerang Fu</b><br>Couch co-op & versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/880940/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/880940/capsule_231x87.jpg" width="150" alt="Pummel Party"></a><br><sub><b>Pummel Party</b><br>Couch versus</sub></td>
+</tr>
+</table>
+
+### Retro
+
+A D-pad you can roll into diagonals, plus buttons: platformers, brawlers and fighting games.
+
+<table>
+<tr>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/1118310/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1118310/capsule_231x87.jpg" width="150" alt="RetroArch (classic consoles)"></a><br><sub><b>RetroArch (classic consoles)</b><br>Couch co-op & versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/1361510/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1361510/capsule_231x87.jpg" width="150" alt="TMNT: Shredder's Revenge"></a><br><sub><b>TMNT: Shredder's Revenge</b><br>Couch co-op</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/985890/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/985890/capsule_231x87.jpg" width="150" alt="Streets of Rage 4"></a><br><sub><b>Streets of Rage 4</b><br>Couch co-op & versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/204360/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/204360/capsule_231x87.jpg" width="150" alt="Castle Crashers"></a><br><sub><b>Castle Crashers</b><br>Couch co-op & versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/251470/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/251470/capsule_231x87.jpg" width="150" alt="TowerFall Ascension"></a><br><sub><b>TowerFall Ascension</b><br>Couch co-op & versus</sub></td>
+</tr>
+<tr>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/291550/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/291550/capsule_231x87.jpg" width="150" alt="Brawlhalla"></a><br><sub><b>Brawlhalla</b><br>Couch co-op & versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/242550/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/242550/capsule_231x87.jpg" width="150" alt="Rayman Legends"></a><br><sub><b>Rayman Legends</b><br>Couch co-op</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/268910/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/268910/capsule_231x87.jpg" width="150" alt="Cuphead"></a><br><sub><b>Cuphead</b><br>Couch co-op</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/584400/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/584400/capsule_231x87.jpg" width="150" alt="Sonic Mania"></a><br><sub><b>Sonic Mania</b><br>Couch co-op & versus</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/586200/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/586200/capsule_231x87.jpg" width="150" alt="Street Fighter 30th Anniversary Collection"></a><br><sub><b>Street Fighter 30th Anniversary Collection</b><br>Couch versus</sub></td>
+</tr>
+</table>
+
+### Full pad
+
+Two sticks, D-pad and every button, for games that need it all.
+
+<table>
+<tr>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/1426210/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1426210/capsule_231x87.jpg" width="150" alt="It Takes Two"></a><br><sub><b>It Takes Two</b><br>Couch co-op</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/2001120/"><img src="https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2001120/1988bcdc421d71cbe4c8c07940967e7a0cd752be/capsule_231x87.jpg" width="150" alt="Split Fiction"></a><br><sub><b>Split Fiction</b><br>Couch co-op</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/1222700/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1222700/capsule_231x87.jpg" width="150" alt="A Way Out"></a><br><sub><b>A Way Out</b><br>Couch co-op</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/620/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/620/capsule_231x87.jpg" width="150" alt="Portal 2"></a><br><sub><b>Portal 2</b><br>Couch co-op</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/413150/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/413150/capsule_231x87.jpg" width="150" alt="Stardew Valley"></a><br><sub><b>Stardew Valley</b><br>Couch co-op</sub></td>
+</tr>
+<tr>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/1672970/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1672970/capsule_231x87.jpg" width="150" alt="Minecraft Dungeons"></a><br><sub><b>Minecraft Dungeons</b><br>Couch co-op</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/1313140/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1313140/capsule_231x87.jpg" width="150" alt="Cult of the Lamb"></a><br><sub><b>Cult of the Lamb</b><br>Couch co-op</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/1599660/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1599660/capsule_231x87.jpg" width="150" alt="Sackboy: A Big Adventure"></a><br><sub><b>Sackboy: A Big Adventure</b><br>Couch co-op</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/920210/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/920210/capsule_231x87.jpg" width="150" alt="LEGO Star Wars: The Skywalker Saga"></a><br><sub><b>LEGO Star Wars: The Skywalker Saga</b><br>Couch co-op</sub></td>
+<td align="center" width="20%"><a href="https://store.steampowered.com/app/1665460/"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/1665460/capsule_231x87.jpg" width="150" alt="eFootball"></a><br><sub><b>eFootball</b><br>Couch co-op & versus</sub></td>
+</tr>
+</table>
+
+<sub>Game images and links: Steam. RetroArch plays classic console games you own.</sub>
+
 ## How it works
 
 ```
