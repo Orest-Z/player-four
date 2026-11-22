@@ -53,29 +53,30 @@ pub enum Problem {
     Failed(String),
 }
 
-#[derive(Clone)]
+/// One player as the window shows them.
+#[derive(Clone, Default, PartialEq)]
 pub struct PlayerView {
+    /// 1-4: what games and Windows call this controller.
     pub number: u32,
     /// Inputs are flowing.
     pub open: bool,
     /// Round trip as the phone last measured it.
     pub rtt_ms: Option<u32>,
-    /// What the phone says it's doing, e.g. "racing tilt" (phone/src/main.js).
+    /// What the phone is doing, e.g. "racing-tilt" (phone/src/main.js).
     pub mode: String,
+    /// The name and color the player picked on their phone, if any.
+    pub name: String,
+    pub color: Option<[u8; 3]>,
+    /// The controller state the game sees.
     pub pad: XGamepad,
 }
 
 struct Player {
     rtc: Rtc,
     pad: Xbox360Wired<Rc<Client>>,
-    /// 1-4: what games and Windows call this controller.
-    number: u32,
     last_seq: Option<u16>,
     last_input: Instant,
-    state: XGamepad,
-    open: bool,
-    rtt_ms: Option<u32>,
-    mode: String,
+    view: PlayerView,
 }
 
 fn main() -> eframe::Result {
@@ -182,16 +183,16 @@ fn host(shared: &Mutex<Shared>) -> Result<(), Box<dyn Error>> {
         let mut next = now + Duration::from_millis(100);
         for p in &mut players {
             if let Err(e) = drive(p, &udp, &mut next) {
-                println!("Player {}: {e}", p.number);
+                println!("Player {}: {e}", p.view.number);
                 p.rtc.disconnect();
             }
-            if now - p.last_input > STALE && p.state != XGamepad::default() {
-                p.state = XGamepad::default();
-                let _ = p.pad.update(&p.state);
+            if now - p.last_input > STALE && p.view.pad != XGamepad::default() {
+                p.view.pad = XGamepad::default();
+                let _ = p.pad.update(&p.view.pad);
             }
         }
         for p in players.iter().filter(|p| !p.rtc.is_alive()) {
-            println!("Player {} left.", p.number);
+            println!("Player {} left.", p.view.number);
         }
         players.retain(|p| p.rtc.is_alive()); // dropping a Player unplugs its controller
         publish(shared, &players);
@@ -216,10 +217,10 @@ fn host(shared: &Mutex<Shared>) -> Result<(), Box<dyn Error>> {
         {
             // Lowest free number, the same rule Windows uses for XInput slots.
             // ponytail: ViGEm's get_user_index reported 0 for every pad here; revisit if numbers drift from the game's.
-            let number = (1..).find(|n| players.iter().all(|p| p.number != *n)).unwrap();
+            let number = (1..).find(|n| players.iter().all(|p| p.view.number != *n)).unwrap();
             match join(&config, udp_addr, phone_ufrag, &vigem, number) {
                 Ok(mut p) => {
-                    println!("Player {} joined from {source}.", p.number);
+                    println!("Player {} joined from {source}.", p.view.number);
                     let _ = p.rtc.handle_input(input);
                     players.push(p);
                 }
@@ -230,16 +231,14 @@ fn host(shared: &Mutex<Shared>) -> Result<(), Box<dyn Error>> {
 }
 
 /// Hands the window a fresh copy of every player. Wakes it only for what it doesn't
-/// animate on its own (someone joining, leaving, or switching layout), so a hidden
-/// window costs nothing while people play.
+/// animate on its own (someone joining, leaving, renaming or switching layout), so a
+/// hidden window costs nothing while people play.
 fn publish(shared: &Mutex<Shared>, players: &[Player]) {
-    let views: Vec<PlayerView> = players
-        .iter()
-        .map(|p| PlayerView { number: p.number, open: p.open, rtt_ms: p.rtt_ms, mode: p.mode.clone(), pad: p.state })
-        .collect();
+    let views: Vec<PlayerView> = players.iter().map(|p| p.view.clone()).collect();
+    // Live inputs and latency don't count: the window animates those itself while showing.
+    let settled = |v: &PlayerView| PlayerView { pad: XGamepad::default(), rtt_ms: None, ..v.clone() };
     let mut s = shared.lock().unwrap();
-    let changed = s.players.len() != views.len()
-        || s.players.iter().zip(&views).any(|(a, b)| (a.number, a.open, &a.mode) != (b.number, b.open, &b.mode));
+    let changed = s.players.len() != views.len() || s.players.iter().zip(&views).any(|(a, b)| settled(a) != settled(b));
     s.players = views;
     drop(s);
     if changed {
@@ -280,17 +279,7 @@ fn join(config: &RtcConfig, local: SocketAddr, phone_ufrag: String, vigem: &Rc<C
     let mut pad = Xbox360Wired::new(vigem.clone(), TargetId::XBOX360_WIRED);
     pad.plugin().map_err(|e| format!("plug in controller: {e:?}"))?;
     pad.wait_ready().map_err(|e| format!("controller ready: {e:?}"))?;
-    Ok(Player {
-        rtc,
-        pad,
-        number,
-        last_seq: None,
-        last_input: Instant::now(),
-        state: XGamepad::default(),
-        open: false,
-        rtt_ms: None,
-        mode: String::new(),
-    })
+    Ok(Player { rtc, pad, last_seq: None, last_input: Instant::now(), view: PlayerView { number, ..Default::default() } })
 }
 
 /// Runs one phone's connection until it has nothing to do before `next`.
@@ -310,23 +299,26 @@ fn drive(p: &mut Player, udp: &UdpSocket, next: &mut Instant) -> Result<(), Box<
                 return Ok(());
             }
             Output::Event(Event::ChannelOpen(..)) => {
-                p.open = true;
-                println!("Player {} connected.", p.number);
+                p.view.open = true;
+                println!("Player {} connected.", p.view.number);
             }
             Output::Event(Event::ChannelData(d)) if d.binary => p.apply(&d.data),
             Output::Event(Event::ChannelData(d)) => {
-                // Ping: "p <sent> <round trip ms, or -> <what the phone is doing>". Echo
-                // "p <sent> <player number>", so the phone can time the round trip and
-                // show which player it is.
+                // Ping: "p <sent> <round trip ms or -> <doing> <color hex or -> <name...>".
+                // Echo "p <sent> <player number>", so the phone can time the round trip
+                // and show which player it is.
                 let text = String::from_utf8_lossy(&d.data);
                 let mut words = text.split(' ');
                 if words.next() != Some("p") {
                     continue;
                 }
                 let sent = words.next().unwrap_or("0");
-                p.rtt_ms = words.next().and_then(|w| w.parse().ok());
-                p.mode = words.collect::<Vec<_>>().join(" ").chars().take(32).collect();
-                let reply = format!("p {sent} {}", p.number);
+                let me = &mut p.view;
+                me.rtt_ms = words.next().and_then(|w| w.parse().ok());
+                me.mode = words.next().unwrap_or_default().chars().take(16).collect();
+                me.color = words.next().and_then(hex_color);
+                me.name = words.collect::<Vec<_>>().join(" ").chars().filter(|c| !c.is_control()).take(16).collect();
+                let reply = format!("p {sent} {}", me.number);
                 if let Some(mut chan) = p.rtc.channel(d.id) {
                     chan.write(false, reply.as_bytes())?;
                 }
@@ -349,7 +341,7 @@ impl Player {
         self.last_seq = Some(seq);
         self.last_input = Instant::now();
         let i16_at = |i: usize| i16::from_le_bytes([b[i], b[i + 1]]);
-        self.state = XGamepad {
+        self.view.pad = XGamepad {
             buttons: XButtons(u16::from_le_bytes([b[2], b[3]])),
             left_trigger: b[4],
             right_trigger: b[5],
@@ -358,8 +350,8 @@ impl Player {
             thumb_rx: i16_at(10),
             thumb_ry: i16_at(12),
         };
-        if let Err(e) = self.pad.update(&self.state) {
-            println!("Player {}: controller update failed: {e:?}", self.number);
+        if let Err(e) = self.pad.update(&self.view.pad) {
+            println!("Player {}: controller update failed: {e:?}", self.view.number);
         }
     }
 }
@@ -454,6 +446,24 @@ fn resolve_stays_inside_root() {
     assert_eq!(resolve(root, "/src/main.js?v=2").unwrap().1, "text/javascript; charset=utf-8");
     for bad in ["/../x.js", "/src/../../x.js", "/src/..%2f..%2fx.js", "/a\\b.js", "/C:/x.js", "//x.js", "/x.exe", "x.js", "/con.js:alt"] {
         assert!(resolve(root, bad).is_none(), "{bad}");
+    }
+}
+
+/// "ec4899" as RGB. Phones send their chosen color this way, or "-" for none.
+fn hex_color(hex: &str) -> Option<[u8; 3]> {
+    if hex.len() != 6 || !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    let v = u32::from_str_radix(hex, 16).ok()?;
+    Some([(v >> 16) as u8, (v >> 8) as u8, v as u8])
+}
+
+#[test]
+fn hex_color_takes_only_six_hex_digits() {
+    assert_eq!(hex_color("ec4899"), Some([0xec, 0x48, 0x99]));
+    assert_eq!(hex_color("CBD5E1"), Some([0xcb, 0xd5, 0xe1]));
+    for bad in ["-", "", "ec489", "ec48999", "+c4899", "zz4899"] {
+        assert_eq!(hex_color(bad), None, "{bad}");
     }
 }
 

@@ -84,15 +84,24 @@ export function initShell(doc) {
     net.className = `net ${avg < 25 ? 'good' : avg < 60 ? 'ok' : 'bad'}`;
   }
 
+  let number = 0, chosen = '';
+  const paint = () => doc.documentElement.style.setProperty('--p', chosen ? `#${chosen}` : COLORS[number] ?? COLORS[0]);
+
   /** @param {number} n */
   function setPlayer(n) {
-    if (player.dataset.n === String(n)) return;
-    player.dataset.n = String(n);
+    if (number === n) return;
+    number = n;
     player.textContent = `P${n}`;
-    doc.documentElement.style.setProperty('--p', COLORS[n] ?? COLORS[0]);
+    paint();
   }
 
-  return { setLink, setLatency, setPlayer, toast, fullscreen, keepAwake };
+  /** This phone's own color (hex without '#'), or '' for its player number's color. @param {string} hex */
+  function setColor(hex) {
+    chosen = /^[0-9a-f]{6}$/i.test(hex) ? hex : '';
+    paint();
+  }
+
+  return { setLink, setLatency, setPlayer, setColor, toast, fullscreen, keepAwake };
 }
 
 /** @typedef {ReturnType<typeof initShell>} Shell */

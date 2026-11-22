@@ -34,6 +34,7 @@ function applySettings() {
   });
   configurePedals({ analog: settings.pedals === 'analog' });
   setHaptics(settings.haptics);
+  shell.setColor(settings.color);
   document.body.dataset.pedals = settings.pedals;
 }
 
@@ -141,10 +142,13 @@ try {
       shell.setLatency(ms);
       shell.setPlayer(player);
     },
-    about: () =>
-      !document.querySelector('#picker')?.hasAttribute('hidden') ? 'picking'
-      : modes.current === 'racing' ? `racing ${steering.kind}`
-      : modes.current,
+    // "<doing> <color or -> <name>", read by the PC's window (pc/src/main.rs, drive()).
+    about() {
+      const doing = !document.querySelector('#picker')?.hasAttribute('hidden') ? 'picking'
+        : modes.current === 'racing' ? `racing-${steering.kind}`
+        : modes.current;
+      return `${doing} ${settings.color || '-'} ${settings.name.trim()}`.trim();
+    },
   });
   setInterval(changed, HEARTBEAT_MS);
 } catch (e) {

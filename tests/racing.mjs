@@ -4,7 +4,7 @@
 import { openPhone, sleep, W, H } from './phone.mjs';
 
 const [url, out] = process.argv.slice(2);
-const { connect, js, rect, click, touch, tilt, screen, shot, xinput, check, finish } = await openPhone(out, 9336);
+const { cdp, connect, js, rect, click, touch, tilt, screen, shot, xinput, check, finish } = await openPhone(out, 9336);
 
 // 1. Through the certificate warning, as a person would ("Advanced", "Proceed").
 await connect(url);
@@ -77,9 +77,16 @@ check('tilt: Center makes the current tilt straight ahead', /LX=0 /.test(x), x);
 await tilt(0);
 await sleep(200);
 
-// 4. Settings sheet.
+// 4. Settings sheet, starting with a name and color, which stay on this phone.
 await click('#settings-btn');
 await sleep(400);
+await click('#s-name');
+await cdp('Input.insertText', { text: 'Sara' });
+await click('.swatches input[value="ec4899"]');
+await sleep(200);
+const saved = JSON.parse(await js('localStorage.getItem("playerfour.settings")'));
+check('name and color saved on the phone', saved.name === 'Sara' && saved.color === 'ec4899', `${saved.name} #${saved.color}`);
+check('the controller takes the chosen color', (await js('getComputedStyle(document.documentElement).getPropertyValue("--p").trim()')) === '#ec4899');
 await shot('5-settings');
 await click('.sheet .done');
 await sleep(200);

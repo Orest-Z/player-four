@@ -188,6 +188,23 @@
       <button type="button" class="chip done" data-close>Done</button>
     </header>
 
+    <h3>You</h3>
+    <div class="field">
+      <label for="s-name">Your name</label>
+      <input id="s-name" class="text" type="text" name="name" maxlength="16" placeholder="e.g. Sara" autocomplete="off" autocapitalize="words" enterkeyhint="done">
+    </div>
+    <div class="swatches" role="radiogroup" aria-label="Your color">
+      <label title="Your player number's color"><input type="radio" name="color" value=""><span class="auto">Auto</span></label>
+      <label><input type="radio" name="color" value="3b82f6" aria-label="Blue"><span style="--c:#3b82f6"></span></label>
+      <label><input type="radio" name="color" value="f97316" aria-label="Orange"><span style="--c:#f97316"></span></label>
+      <label><input type="radio" name="color" value="a855f7" aria-label="Purple"><span style="--c:#a855f7"></span></label>
+      <label><input type="radio" name="color" value="eab308" aria-label="Yellow"><span style="--c:#eab308"></span></label>
+      <label><input type="radio" name="color" value="ec4899" aria-label="Pink"><span style="--c:#ec4899"></span></label>
+      <label><input type="radio" name="color" value="06b6d4" aria-label="Cyan"><span style="--c:#06b6d4"></span></label>
+      <label><input type="radio" name="color" value="cbd5e1" aria-label="Silver"><span style="--c:#cbd5e1"></span></label>
+    </div>
+    <p class="note">Your name and color show on the PC, so everyone knows which player they are.</p>
+
     <h3>Racing steering</h3>
     <div class="seg">
       <label><input type="radio" name="steering" value="touch"><span><svg class="icon"><use href="#i-hand"/></svg>Touch wheel</span></label>

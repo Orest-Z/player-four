@@ -11,7 +11,7 @@ const CONNECT_TIMEOUT_MS = 12000;
 /**
  * @param {string} hash location.hash from the QR code's link
  * @param {{ onStatus(status: LinkStatus): void, onPong(rttMs: number, player: number): void, about(): string }} on
- *   about() describes what this phone is doing (e.g. "racing tilt"), for the PC's window
+ *   about() describes this phone for the PC's window: what it's doing, its color and its name
  * @returns {Promise<{ send(packet: ArrayBuffer): void }>}
  */
 export async function connect(hash, on) {

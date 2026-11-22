@@ -457,7 +457,9 @@ fn players(ui: &mut Ui, players: &[PlayerView]) {
 }
 
 fn player_row(ui: &mut Ui, n: u32, player: Option<&PlayerView>, height: f32) {
-    let color = PLAYER[n as usize - 1];
+    // The color and name picked on the phone, or the player number's own.
+    let color = player.and_then(|p| p.color).map_or(PLAYER[n as usize - 1], |[r, g, b]| Color32::from_rgb(r, g, b));
+    let named = player.map(|p| p.name.trim()).filter(|name| !name.is_empty());
     let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), height), Sense::hover());
     let painter = ui.painter();
     let here = player.is_some();
@@ -474,30 +476,43 @@ fn player_row(ui: &mut Ui, n: u32, player: Option<&PlayerView>, height: f32) {
         painter.text(badge, Align2::CENTER_CENTER, tag, FontId::new(14.0, family("bold")), color.gamma_multiply(0.55));
     }
 
+    // Right side first (latency, live inputs), so the text knows how much room it has.
+    let mut right = rect.right() - 18.0;
+    if let Some(p) = player.filter(|p| p.open) {
+        if let Some(ms) = p.rtt_ms {
+            right = latency(painter, Pos2::new(right, rect.center().y), ms) - 16.0;
+        }
+        live_inputs(painter, Pos2::new(right - LIVE_WIDTH, rect.center().y - 18.0), p, color);
+        right -= LIVE_WIDTH + 14.0;
+    }
+
+    // The badge already says P1, the number games use, so a name can take the title.
     let x = badge.x + 34.0;
-    let name = FontId::new(15.0, family("semibold"));
-    painter.text(Pos2::new(x, rect.center().y - 10.0), Align2::LEFT_CENTER, format!("Player {n}"), name, if here { TEXT } else { MUTED });
+    let room = right - x;
+    let title = named.map_or(format!("Player {n}"), str::to_string);
+    let font = FontId::new(15.0, family("semibold"));
+    line(painter, Pos2::new(x, rect.center().y - 10.0), title, font, if here { TEXT } else { MUTED }, room);
     let status = match player {
         None => "Waiting for a phone…",
         Some(p) if !p.open => "Connecting…",
         Some(p) => describe(&p.mode),
     };
-    painter.text(Pos2::new(x, rect.center().y + 11.0), Align2::LEFT_CENTER, status, FontId::proportional(13.0), MUTED);
+    line(painter, Pos2::new(x, rect.center().y + 11.0), status.into(), FontId::proportional(13.0), MUTED, room);
+}
 
-    if let Some(p) = player.filter(|p| p.open) {
-        let mut right = rect.right() - 18.0;
-        if let Some(ms) = p.rtt_ms {
-            right = latency(painter, Pos2::new(right, rect.center().y), ms) - 16.0;
-        }
-        live_inputs(painter, Pos2::new(right - LIVE_WIDTH, rect.center().y - 18.0), p, color);
-    }
+/// One line of text, cut short with "…" if it would run past `width`.
+fn line(painter: &Painter, left_middle: Pos2, text: String, font: FontId, color: Color32, width: f32) {
+    let mut job = LayoutJob::simple_singleline(text, font, color);
+    job.wrap = egui::text::TextWrapping::truncate_at_width(width.max(0.0));
+    let galley = painter.layout_job(job);
+    painter.galley(Pos2::new(left_middle.x, left_middle.y - galley.size().y / 2.0), galley, color);
 }
 
 /// What the phone said it's doing (phone/src/main.js), in words.
 fn describe(mode: &str) -> &'static str {
     match mode {
-        "racing tilt" => "Racing  ·  tilt steering",
-        "racing touch" => "Racing  ·  touch wheel",
+        "racing-tilt" => "Racing  ·  tilt steering",
+        "racing-touch" => "Racing  ·  touch wheel",
         "party" => "Party",
         "retro" => "Retro",
         "full" => "Full pad",

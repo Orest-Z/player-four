@@ -5,6 +5,10 @@
 const KEY = 'playerfour.settings';
 
 export const DEFAULTS = Object.freeze({
+  /** Shown on the PC next to this phone's player number. Empty: "Player 1" and so on. */
+  name: '',
+  /** Hex without '#', e.g. "ec4899". Empty: the player number's own color. */
+  color: '',
   /** @type {'touch' | 'tilt'} */
   steering: 'touch',
   /** 1..10: how little thumb travel full lock takes on the touch wheel. */
@@ -54,6 +58,7 @@ export function initSettingsSheet(doc, s, onChange) {
 
   function refresh() {
     for (const el of controls) {
+      if (el === doc.activeElement && el.type === 'text') continue; // don't fight the typing
       const v = /** @type {any} */ (s)[el.name];
       if (el.type === 'radio') el.checked = el.value === v;
       else if (el.type === 'checkbox') el.checked = Boolean(v);
@@ -65,6 +70,8 @@ export function initSettingsSheet(doc, s, onChange) {
   }
 
   form.addEventListener('submit', e => e.preventDefault());
+  // "Done" on the keyboard closes it.
+  form.addEventListener('keydown', e => e.key === 'Enter' && /** @type {HTMLElement} */ (e.target).blur());
   form.addEventListener('input', e => {
     const el = /** @type {HTMLInputElement} */ (e.target);
     const key = /** @type {keyof Settings} */ (el.name);
