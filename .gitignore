@@ -1,0 +1,4 @@
+# Leftover from before the PC app moved to pc/ (old build output and keys).
+/spike/
+# The one-file download, built by pack/pack.ps1.
+/dist/

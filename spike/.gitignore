@@ -1,7 +1,0 @@
-/target
-# Private key for the phone page's HTTPS certificate: never publish.
-playerfour-tls-*.der
-# Written on every run, with that session's pairing password.
-qr.svg
-# What the window's X does, saved after the first close.
-playerfour-settings.txt

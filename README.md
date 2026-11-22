@@ -43,14 +43,17 @@ games, for free.
 
 ## Play
 
-1. Install [ViGEmBus](https://github.com/nefarius/ViGEmBus/releases/latest) once. It's the
+1. Download `PlayerFour-…-windows.zip` from [Releases](https://github.com/Orest-Z/player-four/releases),
+   unzip it anywhere and open **Player Four.exe**. It's one file: nothing to install.
+   - If Windows says "Windows protected your PC", click **More info → Run anyway**.
+   - If Windows asks about network access, allow it on private networks.
+2. Install [ViGEmBus](https://github.com/nefarius/ViGEmBus/releases/latest) once. It's the
    driver that creates the virtual controllers, and Player Four tells you if it's missing.
-2. Open **Player Four** on the PC.
 3. Scan the QR code with each phone's camera. Phones need to be on the same Wi-Fi as the PC.
 4. The first time, each phone's browser warns about the connection. Tap **Advanced →
    Proceed** on Android, or **Show Details → visit this website** on iPhone. The warning
    is about the PC's own certificate, which phones need before they'll share their tilt sensor.
-5. Pick a layout and play.
+5. Pick a layout and play. In the phone's settings, each player can set a name and color.
 
 Closing the window keeps Player Four in the tray, so everyone stays connected.
 
@@ -74,12 +77,13 @@ phone browser ── WebRTC, over your Wi-Fi ──▶ player-four.exe ── Vi
 You'll need Windows 10/11, [Rust](https://rustup.rs) and ViGEmBus.
 
 ```
-cd spike
+cd pc
 cargo build --release
 ```
 
-Then run `spike\target\release\player-four.exe`. It serves the phone app from `phone/`,
-so keep the folders together.
+That gives `pc\target\release\player-four.exe`, with the phone app packed inside.
+To make the download (the program, its README and a zip):
+`powershell -ExecutionPolicy Bypass -File pack\pack.ps1`, which writes to `dist\`.
 
 **Tests:** `node tests/run.mjs` type-checks the phone app, then plays phones in headless
 Chrome against the real PC app and reads the controllers back the way a game would.
@@ -88,9 +92,10 @@ It needs Node 22+, Chrome and ViGEmBus.
 | Folder   | What's inside                                              |
 | -------- | ---------------------------------------------------------- |
 | `phone/` | The controller web app that phones open                    |
-| `spike/` | The PC app: connections, virtual controllers, window, tray |
+| `pc/`    | The PC app: connections, virtual controllers, window, tray |
+| `pack/`  | Builds the download and holds its README                   |
 | `tests/` | End-to-end tests                                           |
-| `brand/` | Logo files                                                 |
+| `brand/` | Logo and icon files                                        |
 
 ## Roadmap
 
@@ -98,12 +103,13 @@ It needs Node 22+, Chrome and ViGEmBus.
 - [x] Racing with tilt or touch steering and analog pedals
 - [x] Party, Retro and Full pad layouts
 - [x] PC window with tray icon
-- [ ] One-file download, no source folder needed
-- [ ] No certificate warning on phones
-- [ ] Player names
+- [x] Player names and colors
+- [x] One-file download
 - [ ] Phone vibrates when the game rumbles
+- [ ] Tells you when there's a new version
 - [ ] Linux and Steam Deck
 
-## License
+## Credits and license
 
+Made by [Orest-Z](https://github.com/Orest-Z).
 Player Four will be free and open source. The license is still being chosen.

@@ -1,16 +1,23 @@
 // Runs every phone test end to end: starts the PC host, plays a phone in headless Chrome over the
 // real HTTPS + WebRTC path, and reads the virtual Xbox controller back through XInput like a game.
-// Needs Windows with ViGEmBus and Chrome, and a release build (cargo build --release in spike/).
+// Needs Windows with ViGEmBus and Chrome. Builds the PC app first (the phone app is packed into it).
 // usage: node tests/run.mjs   Screenshots land in a temp folder, printed at the end.
+//   PLAYER_FOUR_EXE=<path to an .exe> tests that program instead, e.g. the packed download.
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 const root = join(import.meta.dirname, '..');
-const host = join(root, 'spike', 'target', 'release', 'player-four.exe');
+const host = process.env.PLAYER_FOUR_EXE ?? join(root, 'pc', 'target', 'release', 'player-four.exe');
 const out = mkdtempSync(join(tmpdir(), 'player-four-tests-'));
 let failed = 0;
+
+if (!process.env.PLAYER_FOUR_EXE) {
+  console.log('== build');
+  const build = spawnSync('cargo', ['build', '--release', '--quiet', '--manifest-path', join(root, 'pc', 'Cargo.toml')], { stdio: 'inherit' });
+  if (build.status !== 0) process.exit(1);
+}
 
 console.log('== types (strict TypeScript over the JSDoc-typed phone app)');
 const types = spawnSync(`npx -y -p typescript@5 tsc -p "${join(root, 'phone')}"`, { stdio: 'inherit', shell: true });
@@ -19,7 +26,7 @@ else console.log('no type errors');
 
 for (const suite of ['racing.mjs', 'rotate.mjs']) {
   // A fresh host per suite, so its phone is always player 1 and controller 1.
-  const pc = spawn(host, [], { cwd: join(root, 'spike') });
+  const pc = spawn(host, [], { cwd: dirname(host) });
   const url = await new Promise((resolve, reject) => {
     let text = '';
     pc.stdout.on('data', d => {

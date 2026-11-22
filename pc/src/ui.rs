@@ -22,7 +22,7 @@ use crate::{PlayerView, Problem, Shared};
 
 const LOGO: &[u8] = include_bytes!("../../phone/icon.png");
 /// Remembers what the window's X button should do.
-const SETTINGS: &str = "playerfour-settings.txt";
+const SETTINGS: &str = "settings.txt"; // in crate::data_dir()
 /// A second launch finds the first one here and asks it to show its window instead.
 const INSTANCE_PORT: u16 = 47801;
 const DRIVER_URL: &str = "https://github.com/nefarius/ViGEmBus/releases/latest";
@@ -116,7 +116,7 @@ impl App {
         style(ctx);
         let logo = image::load_from_memory(LOGO).expect("logo").to_rgba8();
         let size = [logo.width() as usize, logo.height() as usize];
-        let on_close = match fs::read_to_string(SETTINGS).unwrap_or_default().trim() {
+        let on_close = match fs::read_to_string(crate::data_dir().join(SETTINGS)).unwrap_or_default().trim() {
             "close=tray" => OnClose::Tray,
             "close=quit" => OnClose::Quit,
             _ => OnClose::Ask,
@@ -249,7 +249,7 @@ impl App {
         if let Some(choice) = modal.inner {
             self.on_close = choice;
             self.asking = false;
-            let _ = fs::write(SETTINGS, if choice == OnClose::Tray { "close=tray" } else { "close=quit" });
+            let _ = fs::write(crate::data_dir().join(SETTINGS), if choice == OnClose::Tray { "close=tray" } else { "close=quit" });
             ctx.send_viewport_cmd(if choice == OnClose::Tray { ViewportCommand::Visible(false) } else { ViewportCommand::Close });
         } else if modal.should_close() {
             self.asking = false;

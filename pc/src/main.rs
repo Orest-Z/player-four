@@ -10,7 +10,7 @@ use std::error::Error;
 use std::fs;
 use std::io::{self, ErrorKind, Read, Write};
 use std::net::{IpAddr, SocketAddr, TcpListener, UdpSocket};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -24,12 +24,8 @@ use str0m::net::{Protocol, Receive};
 use str0m::{Candidate, Event, IceConnectionState, IceCreds, Input, Output, Rtc, RtcConfig};
 use vigem_client::{Client, TargetId, XButtons, XGamepad, Xbox360Wired};
 
-/// The phone app, served from disk so it can be edited without rebuilding.
-/// ponytail: only works next to the source tree; embed the files for release builds.
-const WEB_ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../phone");
-/// Saved next to where we run, so a phone's "proceed anyway" survives restarts.
-const TLS_CERT: &str = "playerfour-tls-cert.der";
-const TLS_KEY: &str = "playerfour-tls-key.der";
+/// The phone app, packed into the program by build.rs: (path, contents).
+static PHONE_FILES: &[(&str, &[u8])] = include!(concat!(env!("OUT_DIR"), "/phone_files.rs"));
 /// XInput's limit.
 const MAX_PLAYERS: usize = 4;
 /// A phone that goes quiet this long (screen locked, browser in the background)
@@ -360,14 +356,17 @@ impl Player {
 /// sensor to secure pages, and a self-signed one counts once the player taps
 /// past the browser's warning.
 fn tls_config(ip: IpAddr) -> Result<Arc<ServerConfig>, Box<dyn Error>> {
-    // ponytail: the saved certificate names the IP it was made for; delete both files if the PC's IP changes.
-    let (cert, key) = match (fs::read(TLS_CERT), fs::read(TLS_KEY)) {
+    // Saved, so a phone's "proceed anyway" survives restarts. One per address: a
+    // certificate names the address it was made for.
+    let ip_name = ip.to_string().replace(':', "_");
+    let (cert_file, key_file) = (data_dir().join(format!("tls-{ip_name}-cert.der")), data_dir().join(format!("tls-{ip_name}-key.der")));
+    let (cert, key) = match (fs::read(&cert_file), fs::read(&key_file)) {
         (Ok(cert), Ok(key)) => (cert, key),
         _ => {
             let made = rcgen::generate_simple_self_signed(vec![ip.to_string(), "localhost".into()])?;
             let (cert, key) = (made.cert.der().to_vec(), made.signing_key.serialize_der());
-            fs::write(TLS_CERT, &cert)?;
-            fs::write(TLS_KEY, &key)?;
+            fs::write(&cert_file, &cert)?;
+            fs::write(&key_file, &key)?;
             (cert, key)
         }
     };
@@ -394,13 +393,13 @@ fn respond(stream: &mut (impl Read + Write)) -> io::Result<()> {
     let (method, target) = (words.next().unwrap_or_default(), words.next().unwrap_or_default());
 
     let (status, content_type, body) = if method != "GET" && method != "HEAD" {
-        ("405 Method Not Allowed", "text/plain", b"Method not allowed".to_vec())
+        ("405 Method Not Allowed", "text/plain", &b"Method not allowed"[..])
     } else {
-        match resolve(Path::new(WEB_ROOT), target) {
-            None => ("400 Bad Request", "text/plain", b"Bad request".to_vec()),
-            Some((path, content_type)) => match fs::metadata(&path).ok().filter(|m| m.is_file()).and_then(|_| fs::read(&path).ok()) {
-                Some(body) => ("200 OK", content_type, body),
-                None => ("404 Not Found", "text/plain", b"Not found".to_vec()),
+        match resolve(target) {
+            None => ("400 Bad Request", "text/plain", &b"Bad request"[..]),
+            Some((path, content_type)) => match PHONE_FILES.iter().find(|(name, _)| *name == path) {
+                Some((_, body)) => ("200 OK", content_type, *body),
+                None => ("404 Not Found", "text/plain", &b"Not found"[..]),
             },
         }
     };
@@ -410,15 +409,14 @@ fn respond(stream: &mut (impl Read + Write)) -> io::Result<()> {
         body.len()
     )?;
     if method != "HEAD" {
-        stream.write_all(&body)?;
+        stream.write_all(body)?;
     }
     stream.flush()
 }
 
-/// The file under `root` a request target names, with its content type. None
-/// for anything that isn't a plain relative path to a file type we serve, so a
-/// request can never reach outside `root`.
-fn resolve(root: &Path, target: &str) -> Option<(PathBuf, &'static str)> {
+/// The phone app file a request target names, with its content type. None for
+/// anything that isn't a plain relative path to a file type we serve.
+fn resolve(target: &str) -> Option<(&str, &'static str)> {
     let path = target.split(['?', '#']).next()?.strip_prefix('/')?;
     let path = if path.is_empty() { "index.html" } else { path };
     let plain = path.bytes().all(|b| b.is_ascii_alphanumeric() || b"._-/".contains(&b));
@@ -436,17 +434,31 @@ fn resolve(root: &Path, target: &str) -> Option<(PathBuf, &'static str)> {
         "ico" => "image/x-icon",
         _ => return None,
     };
-    Some((root.join(path), content_type))
+    Some((path, content_type))
 }
 
 #[test]
-fn resolve_stays_inside_root() {
-    let root = Path::new("/root");
-    assert_eq!(resolve(root, "/").unwrap().0, root.join("index.html"));
-    assert_eq!(resolve(root, "/src/main.js?v=2").unwrap().1, "text/javascript; charset=utf-8");
+fn resolve_takes_only_plain_paths() {
+    assert_eq!(resolve("/"), Some(("index.html", "text/html; charset=utf-8")));
+    assert_eq!(resolve("/src/main.js?v=2"), Some(("src/main.js", "text/javascript; charset=utf-8")));
     for bad in ["/../x.js", "/src/../../x.js", "/src/..%2f..%2fx.js", "/a\\b.js", "/C:/x.js", "//x.js", "/x.exe", "x.js", "/con.js:alt"] {
-        assert!(resolve(root, bad).is_none(), "{bad}");
+        assert!(resolve(bad).is_none(), "{bad}");
     }
+}
+
+#[test]
+fn the_phone_app_is_packed_in() {
+    for needed in ["index.html", "src/main.js", "src/style.css", "icon.png"] {
+        assert!(PHONE_FILES.iter().any(|(name, _)| *name == needed), "{needed}");
+    }
+    assert!(!PHONE_FILES.iter().any(|(name, _)| name.ends_with("tsconfig.json")));
+}
+
+/// Where Player Four keeps its certificates and settings: %APPDATA%\Player Four.
+pub fn data_dir() -> PathBuf {
+    let dir = std::env::var_os("APPDATA").map_or_else(|| PathBuf::from("."), PathBuf::from).join("Player Four");
+    let _ = fs::create_dir_all(&dir);
+    dir
 }
 
 /// "ec4899" as RGB. Phones send their chosen color this way, or "-" for none.
