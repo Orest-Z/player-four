@@ -9,9 +9,10 @@ if ($LASTEXITCODE) { throw 'cargo build failed' }
 
 $folder = "$root\dist\Player Four"
 $zip = "$root\dist\PlayerFour-$version-windows.zip"
-if (Test-Path $folder) { Remove-Item -Recurse -Force $folder }
-if (Test-Path $zip) { Remove-Item -Force $zip }
+# Empty the folder rather than delete it: an Explorer window showing it would block that.
 New-Item -ItemType Directory -Force $folder | Out-Null
+Get-ChildItem $folder | Remove-Item -Recurse -Force
+if (Test-Path $zip) { Remove-Item -Force $zip }
 
 Copy-Item "$root\pc\target\release\player-four.exe" "$folder\Player Four.exe"
 (Get-Content "$PSScriptRoot\README.txt" -Raw).Replace('{version}', $version) | Set-Content -Encoding UTF8 "$folder\README.txt"

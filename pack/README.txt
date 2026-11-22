@@ -12,10 +12,17 @@ talk straight to this PC over your Wi-Fi.
 
 FIRST TIME ON THIS PC
 ---------------------
-1. Install the controller driver, ViGEmBus (only once):
+1. Install the controller driver, ViGEmBus (only once).
+   If it's missing, Player Four shows an "Open the download page"
+   button. Or go to:
    https://github.com/nefarius/ViGEmBus/releases/latest
-   Player Four tells you if it's missing. If you use DS4Windows,
-   you already have it.
+   - Under "Assets", click ViGEmBus_1.22.0_x64_x86_arm64.exe.
+   - Open the downloaded file and click through the installer.
+     Player Four notices the driver on its own.
+   - If Windows SmartScreen warns about the installer, it's safe
+     to continue ("More info", then "Run anyway") as long as you
+     downloaded it from that GitHub page.
+   If you use DS4Windows, you already have the driver.
 
 2. Double-click "Player Four.exe".
    - If Windows says "Windows protected your PC", click

@@ -164,9 +164,11 @@ impl App {
                 ui,
                 "One-time setup",
                 "Install the controller driver",
-                "Player Four uses ViGEmBus to create the Xbox controllers that games see. \
-                 Install it once; this window carries on by itself when it's done.",
-                Some(("Download ViGEmBus", DRIVER_URL)),
+                "Open the download page. Under Assets, click\n\
+                 ViGEmBus_1.22.0_x64_x86_arm64.exe,\n\
+                 then install it. Player Four carries on\n\
+                 by itself when it's done.",
+                Some(("Open the download page", DRIVER_URL)),
             ),
             (Some(Problem::Failed(why)), _) => notice(ui, "Player Four stopped", why, "Quit it from the tray and open it again.", None),
             (None, None) => {
@@ -438,6 +440,9 @@ fn notice(ui: &mut Ui, kicker: &str, title: &str, body: &str, action: Option<(&s
         if primary(ui, label).clicked() {
             ui.ctx().open_url(egui::OpenUrl::new_tab(url));
         }
+        // Where the button goes, so it's clearly the official page.
+        let shown = url.trim_start_matches("https://").trim_end_matches("/latest");
+        ui.label(RichText::new(shown).size(12.0).color(MUTED));
     }
 }
 

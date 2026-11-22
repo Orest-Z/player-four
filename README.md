@@ -47,8 +47,8 @@ games, for free.
    unzip it anywhere and open **Player Four.exe**. It's one file: nothing to install.
    - If Windows says "Windows protected your PC", click **More info → Run anyway**.
    - If Windows asks about network access, allow it on private networks.
-2. Install [ViGEmBus](https://github.com/nefarius/ViGEmBus/releases/latest) once. It's the
-   driver that creates the virtual controllers, and Player Four tells you if it's missing.
+2. Install the controller driver once ([how](#installing-the-controller-driver)).
+   Player Four tells you if it's missing.
 3. Scan the QR code with each phone's camera. Phones need to be on the same Wi-Fi as the PC.
 4. The first time, each phone's browser warns about the connection. Tap **Advanced →
    Proceed** on Android, or **Show Details → visit this website** on iPhone. The warning
@@ -56,6 +56,27 @@ games, for free.
 5. Pick a layout and play. In the phone's settings, each player can set a name and color.
 
 Closing the window keeps Player Four in the tray, so everyone stays connected.
+
+### Installing the controller driver
+
+Player Four uses the free ViGEmBus driver to create the controllers, and you only install it
+once. If it's missing, Player Four shows an **Open the download page** button that goes
+straight there.
+
+1. On the [ViGEmBus release page](https://github.com/nefarius/ViGEmBus/releases/latest),
+   under **Assets**, click the installer:
+
+   <img src="docs/driver-download.png" width="560" alt="The ViGEmBus release page on GitHub, with ViGEmBus_1.22.0_x64_x86_arm64.exe circled under Assets">
+
+2. Open the file you downloaded and click through the installer:
+
+   <img src="docs/driver-installer.png" alt="The downloaded installer: ViGEmBus_1.22.0_x64_x86_arm64.exe">
+
+3. That's it. Player Four notices the driver on its own.
+
+If Windows SmartScreen warns about the installer, it's safe to continue (**More info → Run
+anyway**) as long as you downloaded it from the GitHub page above. Already using
+DS4Windows? Then you have the driver.
 
 ## How it works
 
