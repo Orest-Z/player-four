@@ -279,6 +279,9 @@ body[data-pedals="full"] .pedal .tick, body[data-pedals="full"] .pedal::before {
 .sheet .done { height: 38px; padding: 0 1.3em; background: var(--p); color: #0b0d10; font-weight: 800; border: 0; }
 .sheet[data-steering="touch"] [data-show="tilt"], .sheet[data-steering="tilt"] [data-show="touch"] { display: none; }
 .sheet .chip { height: 38px; }
+.sheet[data-wheel="turn"] [data-wheel="slide"], .sheet[data-wheel="slide"] [data-wheel="turn"] { display: none; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.presets .chip { height: 32px; padding: 0 .9em; font-size: 13px; }
 .field { display: grid; gap: 6px; margin: 14px 0; }
 .field-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .field output { color: var(--p); font-variant-numeric: tabular-nums; }

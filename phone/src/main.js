@@ -31,7 +31,12 @@ function applySettings() {
     tiltRange: settings.tiltRange,
     tiltInvert: settings.tiltInvert,
     precision: settings.precision / 100,
+    style: settings.wheelStyle,
+    rotation: settings.rotation,
+    returns: settings.wheelReturn,
   });
+  const hint = document.querySelector('#wheel-zone .zone-hint');
+  if (hint) hint.textContent = settings.wheelStyle === 'turn' ? 'Grab the wheel and turn it' : 'Slide left or right anywhere here to steer';
   configurePedals({ analog: settings.pedals === 'analog' });
   setHaptics(settings.haptics);
   setRumble(settings.rumble);

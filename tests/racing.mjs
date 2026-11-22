@@ -18,34 +18,81 @@ check('player number + latency shown', /P\d/.test(await js('document.querySelect
 await shot('1-picker');
 
 
-// 2. Racing, touch wheel + analog pedals.
+// 2. Racing: the touch wheel, turned like a real wheel, and analog pedals.
 await click('[data-pick="racing"]');
 await sleep(300);
 await shot('2-racing-touch');
-const wheel = await rect('#wheel-zone'), gas = await rect('.touch-layout .gas'), brake = await rect('.touch-layout .brake');
-const travel = await js('innerWidth') * (0.42 - (5 * 0.3) / 9); // default sensitivity 6
-const steerPt = [wheel.x + travel * 0.5, wheel.y];
+const hub = await rect('#wheel-zone .wheel-wrap'), gas = await rect('.touch-layout .gas'), brake = await rect('.touch-layout .brake');
+const grip = (Math.min(hub.w, hub.h) / 2) * 0.7;
+/** Where a thumb on the wheel's rim is, at deg clockwise from 12 o'clock. */
+const rim = deg => [hub.x + grip * Math.sin((deg * Math.PI) / 180), hub.y - grip * Math.cos((deg * Math.PI) / 180)];
+/** Turns the thumb around the wheel from one angle to another in small steps, other fingers held. */
+const turnWheel = async (from, to, others = []) => {
+  const steps = Math.ceil(Math.abs(to - from) / 15);
+  for (let i = 1; i <= steps; i++) await touch('touchMove', [rim(from + ((to - from) * i) / steps), ...others]);
+};
 const gasHalf = [gas.x, gas.b - gas.h * 0.5]; // halfway up → (0.5 - 0.1) / 0.75 = 53% → 136
-await touch('touchStart', [[wheel.x, wheel.y]]);
-await touch('touchMove', [steerPt]);
-await touch('touchStart', [steerPt, gasHalf]);
+const brakeTop = [brake.x, brake.b - brake.h * 0.92];
+await touch('touchStart', [rim(0)]);
+await turnWheel(0, 90); // a quarter turn on the default 360° wheel: half of the 180° to full lock
+await touch('touchStart', [rim(90), gasHalf]);
 await sleep(250);
 let x = xinput();
-check('touch: steer half right + gas halfway', /RT=13[4-8] LX=16[0-9]{3} /.test(x), x);
+check('touch: a quarter turn steers half right, gas halfway', /RT=13[4-8] LX=16[0-9]{3} /.test(x), x);
 await shot('3-racing-touch-pressed');
-await touch('touchMove', [steerPt, [brake.x, brake.b - brake.h * 0.92]]);
+await touch('touchMove', [rim(90), brakeTop]);
 await sleep(250);
 x = xinput();
 check('touch: slide gas → brake near top (100%)', /LT=255 RT=0 LX=16[0-9]{3} /.test(x), x);
-await touch('touchMove', [[wheel.x - travel * 3, wheel.y], [brake.x, brake.b - brake.h * 0.92]]);
-await touch('touchMove', [[wheel.x - travel * 3 + travel * 0.25, wheel.y], [brake.x, brake.b - brake.h * 0.92]]);
+await turnWheel(90, 270, [brakeTop]); // stops at full lock, 180°
+await turnWheel(270, 225, [brakeTop]); // back 45° → 135° of 180°
 await sleep(250);
 x = xinput();
-check('touch: past full lock then back a quarter → 75% left at once', /LX=-24[0-9]{3} /.test(x), x);
+check('touch: past full lock then back 45° → 75% at once', /LX=24[0-9]{3} /.test(x), x);
 await touch('touchEnd', []);
-await sleep(250);
+await sleep(450);
 x = xinput();
-check('touch: release → neutral', /buttons=0x0000 LT=0 RT=0 LX=0 LY=0/.test(x), x);
+check('touch: let go → the wheel springs back to center', /buttons=0x0000 LT=0 RT=0 LX=0 LY=0/.test(x), x);
+
+// A 900° wheel, as in Euro Truck Simulator 2: a full turn is 80%, and re-gripping hand over hand
+// keeps the wheel where it was.
+await click('#settings-btn');
+await sleep(400);
+await click('.presets [data-rotation="900"]');
+await click('.sheet .done');
+await sleep(200);
+await touch('touchStart', [rim(0)]);
+await turnWheel(0, 360);
+await sleep(200);
+x = xinput();
+check('900° wheel: one full turn → 80%', /LX=26[0-9]{3} /.test(x), x);
+await touch('touchEnd', []);
+await sleep(100); // re-grip quickly
+await touch('touchStart', [rim(0)]);
+await turnWheel(0, 90);
+await sleep(200);
+x = xinput();
+check('900° wheel: re-grip and turn on → full lock at 450°', /LX=32767 /.test(x), x);
+await touch('touchEnd', []);
+await sleep(800);
+x = xinput();
+check('900° wheel: let go → back to center', /LX=0 /.test(x), x);
+
+// Sliding instead of turning still works.
+await click('#settings-btn');
+await sleep(400);
+await click('input[name="wheelStyle"][value="slide"]');
+await click('.sheet .done');
+await sleep(200);
+const zone = await rect('#wheel-zone');
+const travel = (await js('innerWidth')) * (0.42 - (5 * 0.3) / 9); // default sensitivity 6
+await touch('touchStart', [[zone.x, zone.y]]);
+await touch('touchMove', [[zone.x + travel * 0.5, zone.y]]);
+await sleep(200);
+x = xinput();
+check('slide wheel: half the travel → half right', /LX=16[0-9]{3} /.test(x), x);
+await touch('touchEnd', []);
+await sleep(200);
 
 // 3. Tilt steering (Chrome fakes the phone's sensors).
 await click('.steer-switch [data-value="tilt"]');

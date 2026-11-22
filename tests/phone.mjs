@@ -35,7 +35,9 @@ export async function openPhone(out, port = 9336) {
 
   const phone = {
     cdp, js, rect,
+    /** Taps the first visible match, scrolling it into view first like a person would. */
     async click(sel) {
+      await js(`[...document.querySelectorAll('${sel}')].find(e => e.offsetParent || e.getClientRects().length)?.scrollIntoView({ block: 'center' })`);
       const r = await rect(sel);
       if (!r) throw new Error('not visible: ' + sel);
       for (const type of ['mousePressed', 'mouseReleased']) await cdp('Input.dispatchMouseEvent', { type, x: r.x, y: r.y, button: 'left', clickCount: 1 });

@@ -11,7 +11,13 @@ export const DEFAULTS = Object.freeze({
   color: '',
   /** @type {'touch' | 'tilt'} */
   steering: 'touch',
-  /** 1..10: how little thumb travel full lock takes on the touch wheel. */
+  /** @type {'turn' | 'slide'} Turn the touch wheel like a real one, or slide left and right. */
+  wheelStyle: 'turn',
+  /** Wheel rotation lock to lock, in degrees, to match the game's: 900 for Euro Truck Simulator 2. */
+  rotation: 360,
+  /** The turned wheel springs back to center when let go. */
+  wheelReturn: true,
+  /** 1..10: how little thumb travel full lock takes on the sliding touch wheel. */
   sensitivity: 6,
   /** Degrees of tilt for full lock. */
   tiltRange: 35,
@@ -45,6 +51,7 @@ export const travelFor = sensitivity => 0.42 - ((sensitivity - 1) * 0.3) / 9;
 const FORMAT = {
   sensitivity: v => String(v),
   tiltRange: v => `${v}°`,
+  rotation: v => `${v}°`,
   precision: v => (Number(v) === 0 ? 'Off' : `${v}%`),
 };
 
@@ -57,6 +64,7 @@ export function initSettingsSheet(doc, s, onChange) {
   const sheet = /** @type {HTMLElement} */ (doc.querySelector('#settings'));
   const form = /** @type {HTMLFormElement} */ (sheet.querySelector('form'));
   const controls = /** @type {HTMLInputElement[]} */ ([...form.elements].filter(el => el instanceof HTMLInputElement));
+  const presets = /** @type {NodeListOf<HTMLElement>} */ (sheet.querySelectorAll('[data-rotation]'));
 
   function refresh() {
     for (const el of controls) {
@@ -69,9 +77,17 @@ export function initSettingsSheet(doc, s, onChange) {
       if (out && FORMAT[el.name]) out.textContent = FORMAT[el.name](v);
     }
     sheet.dataset.steering = s.steering; // shows only the touch or tilt fields
+    sheet.dataset.wheel = s.wheelStyle; // and only the turning or sliding wheel's
+    for (const b of presets) b.classList.toggle('on', Number(b.dataset.rotation) === s.rotation);
   }
 
   form.addEventListener('submit', e => e.preventDefault());
+  for (const b of presets) {
+    b.addEventListener('click', () => {
+      onChange('rotation', Number(b.dataset.rotation));
+      refresh();
+    });
+  }
   // "Done" on the keyboard closes it.
   form.addEventListener('keydown', e => e.key === 'Enter' && /** @type {HTMLElement} */ (e.target).blur());
   form.addEventListener('input', e => {

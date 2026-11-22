@@ -3,9 +3,6 @@
 // (on the racing screen and in settings). Drawing is batched to one update per frame; the
 // steering value itself goes to the PC immediately, on every sensor or touch event.
 
-/** How far the drawn wheel turns at full lock, in degrees. */
-const WHEEL_LOCK_DEG = 135;
-
 /**
  * @param {Document} doc
  * @param {import('../input/steering.js').Steering} steering
@@ -16,22 +13,25 @@ export function initRacing(doc, steering) {
     fill: /** @type {HTMLElement} */ (m.querySelector('.steer-fill')),
     text: /** @type {HTMLElement} */ (m.querySelector('.steer-text')),
   }));
-  let value = 0, queued = false;
+  let value = 0, turned = 0, queued = false;
 
   function draw() {
     queued = false;
-    for (const w of wheels) w.style.rotate = `${value * WHEEL_LOCK_DEG}deg`;
+    // The drawn wheel turns as far as the game's wheel: past a full turn on a 900° wheel.
+    for (const w of wheels) w.style.rotate = `${turned}deg`;
     const pct = Math.round(Math.abs(value) * 100);
     let text = pct === 0 ? 'Straight' : `${value < 0 ? 'Left' : 'Right'} ${pct}%`;
     if (steering.kind === 'tilt') text += ` · tilt ${Math.round(steering.tiltAngle())}°`;
+    else if (pct) text += ` · ${Math.round(Math.abs(turned))}°`;
     for (const m of meters) {
       m.fill.style.left = `${50 + Math.min(value, 0) * 50}%`;
       m.fill.style.width = `${Math.abs(value) * 50}%`;
       m.text.textContent = text;
     }
   }
-  steering.onSteer(v => {
+  steering.onSteer((v, deg) => {
     value = v;
+    turned = deg;
     if (!queued) {
       queued = true;
       requestAnimationFrame(draw);
@@ -42,7 +42,7 @@ export function initRacing(doc, steering) {
     /** @param {import('../input/steering.js').SteeringKind} kind */
     showSteering(kind) {
       doc.body.dataset.steering = kind; // picks the layout and lights the top-bar switch
-      value = 0;
+      value = turned = 0;
       draw();
     },
   };

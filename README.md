@@ -28,8 +28,9 @@ games, for free.
 
 - **Four players, one QR code.** Every phone scans the same code and becomes its own
   Xbox 360 controller. Games see real controllers, so there's nothing to set up in the game.
-- **Racing that feels right.** Steer by tilting the phone or with a touch wheel, and press
-  gas and brake as gently or as hard as you like.
+- **Racing that feels right.** Steer by tilting the phone, or grab the on-screen wheel and turn
+  it like a real one, up to 1080° to match sims like Euro Truck Simulator 2 (900°). Press gas
+  and brake as gently or as hard as you like.
 - **Feel the game.** When a game rumbles the controller, the phone shakes too, harder for
   stronger rumble (Android: iPhones don't let web pages vibrate).
 - **A layout for every game.** Racing, Party (one stick, four big buttons), Retro (D-pad)

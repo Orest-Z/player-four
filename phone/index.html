@@ -213,6 +213,25 @@
     <div class="steer-meter big"><div class="steer-fill"></div><span class="steer-text">Straight</span></div>
 
     <div class="field" data-show="touch">
+      <div class="seg">
+        <label><input type="radio" name="wheelStyle" value="turn"><span>Turn the wheel</span></label>
+        <label><input type="radio" name="wheelStyle" value="slide"><span>Slide left/right</span></label>
+      </div>
+      <p class="note" data-wheel="turn">Grab it anywhere and turn it in a circle, like a real wheel.</p>
+      <p class="note" data-wheel="slide">Slide your thumb left or right anywhere on the wheel's side.</p>
+    </div>
+    <div class="field" data-show="touch" data-wheel="turn">
+      <div class="field-row"><label for="s-rotation">Wheel rotation</label><output for="s-rotation"></output></div>
+      <input id="s-rotation" type="range" name="rotation" min="180" max="1080" step="30">
+      <div class="presets">
+        <button type="button" class="chip" data-rotation="270">Arcade 270°</button>
+        <button type="button" class="chip" data-rotation="540">Rally 540°</button>
+        <button type="button" class="chip" data-rotation="900">Trucks &amp; sims 900°</button>
+      </div>
+      <p class="note">Lock to lock, like a game's "steering rotation" setting. Set the same here: Euro Truck Simulator 2 uses 900°, two and a half turns.</p>
+    </div>
+    <label class="toggle" data-show="touch" data-wheel="turn"><span>Wheel returns to center when you let go</span><input type="checkbox" name="wheelReturn"></label>
+    <div class="field" data-show="touch" data-wheel="slide">
       <div class="field-row"><label for="s-sensitivity">Wheel sensitivity</label><output for="s-sensitivity"></output></div>
       <input id="s-sensitivity" type="range" name="sensitivity" min="1" max="10" step="1">
       <p class="note">Higher means less thumb travel for full lock.</p>
