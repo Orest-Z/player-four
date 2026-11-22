@@ -4,6 +4,7 @@
 import { trigger } from '../protocol/pad.js';
 import { track } from './touch.js';
 import { buzz } from './haptics.js';
+import { point, box } from './frame.js';
 
 /** @typedef {import('../protocol/pad.js').Pad} Pad */
 
@@ -17,11 +18,11 @@ export const configurePedals = c => {
 /**
  * Pedal travel from the thumb's height: the bottom 10% is the lightest touch (5%), the top 15% is 100%,
  * linear between, so both ends are easy to hit without aiming.
- * @param {Element} el @param {number} y
+ * @param {Element} el @param {number} y in the controls' frame (frame.js)
  */
 export function depth(el, y) {
-  const r = el.getBoundingClientRect();
-  const up = (r.bottom - y) / r.height;
+  const r = box(el);
+  const up = (r.bottom - y) / (r.bottom - r.top);
   return Math.max(0.05, Math.min(1, (up - 0.1) / 0.75));
 }
 
@@ -30,7 +31,7 @@ export const heightFor = d => 0.1 + d * 0.75;
 
 /** @param {Element} el @param {number} x horizontal distance from the thumb to a pedal */
 const gap = (el, x) => {
-  const r = el.getBoundingClientRect();
+  const r = box(el);
   return x < r.left ? r.left - x : x > r.right ? x - r.right : 0;
 };
 
@@ -71,9 +72,10 @@ export function bindPedals(root, pad, changed) {
     };
     /** @param {PointerEvent} e */
     const at = e => {
+      const { x, y } = point(e.clientX, e.clientY);
       // Which pedal is decided by x alone, so drifting above or below one keeps it pressed.
-      const el = pedals.reduce((best, p) => (gap(p, e.clientX) < gap(best, e.clientX) ? p : best));
-      press(el, cfg.analog ? depth(el, e.clientY) : 1);
+      const el = pedals.reduce((best, p) => (gap(p, x) < gap(best, x) ? p : best));
+      press(el, cfg.analog ? depth(el, y) : 1);
     };
     track(group, { down: at, move: at, up: () => press(null, 0) });
   }

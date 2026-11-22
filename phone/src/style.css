@@ -10,21 +10,41 @@
   --muted: #8b93a1;
   --gas: #22c55e;
   --brake: #ef4444;
-  --gap: clamp(6px, 1.9vh, 14px);
+  --gap: clamp(6px, calc(1.9 * var(--vh)), 14px);
   --radius: 18px;
   color-scheme: dark;
+  /* Viewport units and notch insets, as seen by the controls: swapped below when the page is turned. */
+  --vh: 1vh; --vw: 1vw;
+  --sa-t: env(safe-area-inset-top); --sa-r: env(safe-area-inset-right);
+  --sa-b: env(safe-area-inset-bottom); --sa-l: env(safe-area-inset-left);
 }
+
+/* Tilt steering holds the screen still (input/frame.js). Where the browser can't lock rotation, the
+   phone may still auto-rotate mid-corner: the page is then turned back by the same amount, so every
+   control stays under the thumbs. Each turn maps the notch insets to the sides they now face. */
+html[data-turn] body { position: fixed; left: 50%; top: 50%; translate: -50% -50%; }
+html[data-turn="90"], html[data-turn="270"] { --vh: 1vw; --vw: 1vh; }
+html[data-turn="90"] body, html[data-turn="270"] body { width: 100dvh; height: 100dvw; }
+html[data-turn="180"] body { width: 100dvw; }
+html[data-turn="90"] { --sa-t: env(safe-area-inset-right); --sa-r: env(safe-area-inset-bottom); --sa-b: env(safe-area-inset-left); --sa-l: env(safe-area-inset-top); }
+html[data-turn="90"] body { rotate: 90deg; }
+html[data-turn="180"] { --sa-t: env(safe-area-inset-bottom); --sa-r: env(safe-area-inset-left); --sa-b: env(safe-area-inset-top); --sa-l: env(safe-area-inset-right); }
+html[data-turn="180"] body { rotate: 180deg; }
+html[data-turn="270"] { --sa-t: env(safe-area-inset-left); --sa-r: env(safe-area-inset-top); --sa-b: env(safe-area-inset-right); --sa-l: env(safe-area-inset-bottom); }
+html[data-turn="270"] body { rotate: -90deg; }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 [hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; overflow: hidden; }
+html { background: var(--bg); } /* keeps body's own background on body, so it turns with it */
 body {
+  container-type: size; /* layout questions ask the controls' frame, not the browser's viewport */
   display: flex;
   flex-direction: column;
   gap: var(--gap);
   height: 100dvh;
-  padding: max(var(--gap), env(safe-area-inset-top)) max(var(--gap), env(safe-area-inset-right))
-           max(var(--gap), env(safe-area-inset-bottom)) max(var(--gap), env(safe-area-inset-left));
+  padding: max(var(--gap), var(--sa-t)) max(var(--gap), var(--sa-r))
+           max(var(--gap), var(--sa-b)) max(var(--gap), var(--sa-l));
   background: radial-gradient(120% 90% at 50% 0%, #151a22 0%, var(--bg) 62%);
   color: var(--text);
   font: 600 15px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -41,7 +61,7 @@ svg { display: block; }
 
 /* ---------- Top bar ---------- */
 
-.bar { flex: none; height: clamp(34px, 10.5vh, 50px); display: flex; align-items: center; gap: calc(var(--gap) * .8); }
+.bar { flex: none; height: clamp(34px, calc(10.5 * var(--vh)), 50px); display: flex; align-items: center; gap: calc(var(--gap) * .8); }
 .spacer { flex: 1; }
 .player {
   display: inline-grid; place-items: center; height: 100%; min-width: 3.4em; padding: 0 .9em;
@@ -66,7 +86,7 @@ svg { display: block; }
 .chip.on { box-shadow: inset 0 0 0 1.5px var(--p); transition: none; }
 .chip.icon-only { padding: 0; aspect-ratio: 1; }
 .bar .chip .icon { width: 1.25em; height: 1.25em; }
-@media (max-width: 700px) { .bar .chip .label { display: none; } .bar .chip:has(.label) { padding: 0; aspect-ratio: 1; } }
+@container (max-width: 700px) { .bar .chip .label { display: none; } .bar .chip:has(.label) { padding: 0; aspect-ratio: 1; } }
 
 /* ---------- Shared pieces ---------- */
 
@@ -83,12 +103,12 @@ main { flex: 1; min-height: 0; display: grid; gap: var(--gap); }
 }
 .used .zone-hint { opacity: 0; }
 
-.cluster { display: flex; gap: calc(var(--gap) * .7); height: clamp(34px, 13vh, 58px); min-width: 0; }
+.cluster { display: flex; gap: calc(var(--gap) * .7); height: clamp(34px, calc(13 * var(--vh)), 58px); min-width: 0; }
 .cluster > * { flex: 1; min-width: 0; }
 
 .btn {
   display: grid; place-items: center; min-width: 0; border-radius: 14px; font-weight: 800; letter-spacing: .03em;
-  font-size: clamp(12px, 2vw, 16px); background: linear-gradient(180deg, #282d36, #1d2129); border: 1px solid var(--line);
+  font-size: clamp(12px, calc(2 * var(--vw)), 16px); background: linear-gradient(180deg, #282d36, #1d2129); border: 1px solid var(--line);
   box-shadow: 0 3px 0 rgba(5, 6, 8, .65), inset 0 1px 0 rgba(255, 255, 255, .07);
   transition: transform .09s, box-shadow .09s, filter .09s;
 }
@@ -99,11 +119,11 @@ main { flex: 1; min-height: 0; display: grid; gap: var(--gap); }
 
 /* Face buttons in Xbox colors */
 .face {
-  --s: min(16.5vh, 10.5vw);
+  --s: min(calc(16.5 * var(--vh)), calc(10.5 * var(--vw)));
   display: grid; place-content: center; gap: calc(var(--s) * .12); min-height: 0;
   grid-template: ". y ." var(--s) "x . b" var(--s) ". a ." var(--s) / var(--s) var(--s) var(--s);
 }
-.face.big { --s: min(19.5vh, 11.5vw); }
+.face.big { --s: min(calc(19.5 * var(--vh)), calc(11.5 * var(--vw))); }
 .face .btn {
   border: 0; border-radius: 50%; font-size: calc(var(--s) * .36); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .5);
   box-shadow: 0 4px 0 rgba(0, 0, 0, .55), inset 0 2px 0 rgba(255, 255, 255, .25), inset 0 -8px 14px rgba(0, 0, 0, .25);
@@ -117,7 +137,7 @@ main { flex: 1; min-height: 0; display: grid; gap: var(--gap); }
 /* Floating stick: a faint ring shows where it lives, the real one appears under the thumb. */
 .stick-zone { display: grid; place-items: center; }
 .stick-zone::before {
-  content: ""; width: min(30vh, 60%); aspect-ratio: 1; border-radius: 50%;
+  content: ""; width: min(calc(30 * var(--vh)), 60%); aspect-ratio: 1; border-radius: 50%;
   border: 2px dashed rgba(255, 255, 255, .07); transition: opacity .2s;
 }
 .stick-zone.on::before { opacity: 0; }
@@ -151,7 +171,7 @@ main { flex: 1; min-height: 0; display: grid; gap: var(--gap); }
 body:not([data-mode="racing"]) .steer-switch { display: none; }
 body[data-steering="touch"] .steer-switch [data-value="touch"],
 body[data-steering="tilt"] .steer-switch [data-value="tilt"] { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--p) 75%, transparent); }
-@media (max-width: 820px) { .steer-switch .label { display: none; } }
+@container (max-width: 820px) { .steer-switch .label { display: none; } }
 
 /* ---------- Racing ---------- */
 
@@ -175,7 +195,7 @@ body[data-steering="touch"] .tilt-layout, body[data-steering="tilt"] .touch-layo
 .steer-meter.big .steer-text { font-size: 13px; }
 
 .tilt-mid { display: flex; flex-direction: column; align-items: center; gap: var(--gap); min-height: 0; min-width: 0; }
-.tilt-mid .cluster { width: 100%; height: clamp(32px, 11.5vh, 50px); }
+.tilt-mid .cluster { width: 100%; height: clamp(32px, calc(11.5 * var(--vh)), 50px); }
 .center-btn { flex: 1.7 !important; height: 100%; border-radius: 14px; }
 
 .pedals { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--gap); min-height: 0; }
@@ -197,59 +217,59 @@ body[data-steering="touch"] .tilt-layout, body[data-steering="tilt"] .touch-layo
 .pedal .tick { position: absolute; right: 0; width: 16%; height: 2px; bottom: calc(var(--h) * 100%); background: rgba(255, 255, 255, .22); border-radius: 2px 0 0 2px; }
 .pedal::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 15%; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 18%, transparent), transparent); pointer-events: none; }
 body[data-pedals="full"] .pedal .tick, body[data-pedals="full"] .pedal::before { display: none; }
-.pedal-value { position: absolute; left: 0; right: 0; top: 18%; text-align: center; font-size: clamp(15px, 3.2vw, 26px); font-weight: 800; font-variant-numeric: tabular-nums; opacity: .25; text-shadow: 0 1px 4px rgba(0, 0, 0, .6); }
+.pedal-value { position: absolute; left: 0; right: 0; top: 18%; text-align: center; font-size: clamp(15px, calc(3.2 * var(--vw)), 26px); font-weight: 800; font-variant-numeric: tabular-nums; opacity: .25; text-shadow: 0 1px 4px rgba(0, 0, 0, .6); }
 .pedal.on .pedal-value { opacity: 1; }
-.pedal-label { position: absolute; left: 0; right: 0; bottom: 6%; text-align: center; font-size: clamp(12px, 2.3vw, 17px); font-weight: 800; letter-spacing: .14em; color: color-mix(in srgb, var(--c) 70%, #fff); text-shadow: 0 1px 4px rgba(0, 0, 0, .6); }
+.pedal-label { position: absolute; left: 0; right: 0; bottom: 6%; text-align: center; font-size: clamp(12px, calc(2.3 * var(--vw)), 17px); font-weight: 800; letter-spacing: .14em; color: color-mix(in srgb, var(--c) 70%, #fff); text-shadow: 0 1px 4px rgba(0, 0, 0, .6); }
 
 /* ---------- Party, Retro, Full ---------- */
 
 .party { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
 .retro { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .full { grid-template: auto minmax(0, 1fr) / repeat(3, minmax(0, 1fr)); }
-.full .cluster.wide { grid-column: 1 / -1; height: clamp(32px, 11.5vh, 50px); }
+.full .cluster.wide { grid-column: 1 / -1; height: clamp(32px, calc(11.5 * var(--vh)), 50px); }
 .full .col { grid-template-rows: 2fr 3fr; }
-.full .face { --s: min(15vh, 9vw); }
+.full .face { --s: min(calc(15 * var(--vh)), calc(9 * var(--vw))); }
 
 /* ---------- Overlays ---------- */
 
 .overlay {
-  position: fixed; inset: 0; z-index: 20; display: grid; place-content: center; justify-items: center; gap: 2.4vh; text-align: center;
-  padding: max(4vh, env(safe-area-inset-top)) max(4vw, env(safe-area-inset-right)) max(4vh, env(safe-area-inset-bottom)) max(4vw, env(safe-area-inset-left));
+  position: fixed; inset: 0; z-index: 20; display: grid; place-content: center; justify-items: center; gap: calc(2.4 * var(--vh)); text-align: center;
+  padding: max(calc(4 * var(--vh)), var(--sa-t)) max(calc(4 * var(--vw)), var(--sa-r)) max(calc(4 * var(--vh)), var(--sa-b)) max(calc(4 * var(--vw)), var(--sa-l));
   background: rgba(9, 11, 14, .96);
 }
-.overlay h1 { margin: 0; font-size: clamp(18px, 5vh, 26px); }
+.overlay h1 { margin: 0; font-size: clamp(18px, calc(5 * var(--vh)), 26px); }
 .overlay p { margin: 0; max-width: 34em; color: var(--muted); font-weight: 500; line-height: 1.45; }
 .status { z-index: 40; }
-.brand { display: grid; justify-items: center; gap: 1.2vh; margin-bottom: 1vh; font-size: 13px; font-weight: 900; letter-spacing: .24em; text-transform: uppercase; }
-.brand img { display: block; width: clamp(56px, 20vh, 80px); height: auto; }
+.brand { display: grid; justify-items: center; gap: calc(1.2 * var(--vh)); margin-bottom: calc(1 * var(--vh)); font-size: 13px; font-weight: 900; letter-spacing: .24em; text-transform: uppercase; }
+.brand img { display: block; width: clamp(56px, calc(20 * var(--vh)), 80px); height: auto; }
 .big-icon { width: 54px; height: 54px; color: var(--muted); stroke-width: 1.6; }
 .primary { padding: .85em 2.2em; border-radius: 999px; background: var(--p); color: #0b0d10; font-weight: 800; }
 .spinner { width: 42px; height: 42px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .1); border-top-color: var(--p); animation: spin .9s linear infinite; }
 @keyframes spin { to { rotate: 1turn; } }
 
 .rotate { display: none; z-index: 10; }
-@media (orientation: portrait) { .rotate:not([hidden]) { display: grid; } }
+@container (orientation: portrait) { .rotate:not([hidden]) { display: grid; } }
 
 .picker { z-index: 25; overflow-y: auto; touch-action: pan-y; }
-.cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); width: min(94vw, 1080px); }
-@media (orientation: portrait) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); width: min(calc(94 * var(--vw)), 1080px); }
+@container (orientation: portrait) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .card {
-  display: grid; grid-template-rows: auto auto 1fr auto; align-content: start; gap: .5em; padding: clamp(10px, 3vh, 20px);
+  display: grid; grid-template-rows: auto auto 1fr auto; align-content: start; gap: .5em; padding: clamp(10px, calc(3 * var(--vh)), 20px);
   border-radius: 20px; text-align: left; background: linear-gradient(180deg, #1e232b, #15181e); border: 1px solid var(--line);
   box-shadow: 0 6px 20px rgba(0, 0, 0, .4); transition: transform .12s, border-color .2s;
 }
 .card:active { transform: scale(.97); }
 .card.current { border-color: var(--p); box-shadow: 0 0 0 1px var(--p), 0 8px 28px color-mix(in srgb, var(--p) 22%, transparent); }
-.card .art { width: 100%; height: clamp(34px, 14vh, 86px); fill: none; stroke: var(--p); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-.card b { font-size: clamp(15px, 3.6vh, 20px); }
+.card .art { width: 100%; height: clamp(34px, calc(14 * var(--vh)), 86px); fill: none; stroke: var(--p); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.card b { font-size: clamp(15px, calc(3.6 * var(--vh)), 20px); }
 .card span { font-size: 12.5px; font-weight: 500; line-height: 1.35; color: #c3c9d3; }
 .card small { font-size: 11.5px; font-weight: 500; color: var(--muted); }
 
 /* Settings: a drawer from the right */
 .sheet { position: fixed; inset: 0; z-index: 30; display: flex; justify-content: flex-end; background: rgba(0, 0, 0, .55); }
 .sheet-panel {
-  width: min(500px, 64vw); height: 100%; margin: 0; overflow-y: auto; touch-action: pan-y; overscroll-behavior: contain;
-  padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) 20px;
+  width: min(500px, calc(64 * var(--vw))); height: 100%; margin: 0; overflow-y: auto; touch-action: pan-y; overscroll-behavior: contain;
+  padding: max(16px, var(--sa-t)) max(20px, var(--sa-r)) max(20px, var(--sa-b)) 20px;
   background: #12151a; border-left: 1px solid var(--line); box-shadow: -24px 0 48px rgba(0, 0, 0, .5); animation: slide-in .2s ease-out;
 }
 @keyframes slide-in { from { translate: 40px 0; opacity: 0; } }
@@ -276,7 +296,7 @@ input[type="range"] { width: 100%; height: 30px; margin: 0; accent-color: var(--
 
 .toast {
   /* Top center: thumbs and the most-used buttons live at the bottom. */
-  position: fixed; left: 50%; top: max(var(--gap), env(safe-area-inset-top)); z-index: 50; max-width: min(70vw, 520px);
+  position: fixed; left: 50%; top: max(var(--gap), var(--sa-t)); z-index: 50; max-width: min(calc(70 * var(--vw)), 520px);
   padding: 10px 16px; border-radius: 12px; text-align: center; font-size: 13.5px; line-height: 1.35;
   background: #1f242c; border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0, 0, 0, .6);
   opacity: 0; translate: -50% -8px; pointer-events: none; transition: opacity .2s, translate .2s;

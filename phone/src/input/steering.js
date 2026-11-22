@@ -3,6 +3,7 @@
 import { axis } from '../protocol/pad.js';
 import { track } from './touch.js';
 import { buzz } from './haptics.js';
+import * as frame from './frame.js';
 
 /** @typedef {import('../protocol/pad.js').Pad} Pad */
 /** @typedef {'touch' | 'tilt'} SteeringKind */
@@ -16,23 +17,20 @@ const TILT_SMOOTHING_S = 0.01;
 /** @param {number} v @param {number} [lo] @param {number} [hi] */
 const clamp = (v, lo = -1, hi = 1) => Math.max(lo, Math.min(hi, v));
 
-/** Screen rotation in degrees from the phone's natural (portrait) orientation. */
-const screenRotation = () =>
-  screen.orientation?.angle ?? Number(/** @type {any} */ (window).orientation ?? 0);
-
 /**
  * How far the phone's long edge is tipped from level, in degrees, positive when the right end
  * is lower: the phone as a steering wheel. Uses gravity rather than a single Euler angle, so it
  * works however the phone is held, from flat in the lap to upright.
  * "Up" in the phone's own axes follows from the W3C DeviceOrientation angles (Z-X'-Y''); it is
- * dotted with the screen's rightward axis for the current screen rotation.
+ * dotted with the rightward axis of the frame the controls are drawn in. That frame is held while
+ * tilt steers, so a phone that auto-rotates mid-corner doesn't swing the reference by 90°.
  * @param {number} beta @param {number} gamma
  */
 export function roll(beta, gamma) {
   const b = beta * RAD, g = gamma * RAD;
   const upX = -Math.cos(b) * Math.sin(g);
   const upY = Math.sin(b);
-  const t = screenRotation() * RAD;
+  const t = frame.angle() * RAD;
   return Math.asin(clamp(-(upX * Math.cos(t) - upY * Math.sin(t)))) / RAD;
 }
 
@@ -156,11 +154,13 @@ export function createSteering(pad, changed) {
       }
       kind = 'tilt';
       side = 0;
+      frame.hold();
       return 'ok';
     },
 
     disableTilt() {
       removeEventListener('deviceorientation', onOrientation);
+      frame.release();
       kind = 'touch';
       side = 0;
       set(0);

@@ -47,7 +47,11 @@ async function useSteering(kind) {
   racing.showSteering(kind);
   sheet.refresh();
   if (kind === 'tilt') {
-    const result = await steering.enableTilt();
+    const pending = steering.enableTilt(); // first: iPhones ask for motion access within this tap
+    // Tilting a phone like a wheel makes it auto-rotate. Full screen lets Android lock rotation;
+    // where nothing can (iPhones), steering holds its frame and the page turns itself back.
+    void shell.fullscreen();
+    const result = await pending;
     if (result !== 'ok') {
       shell.toast(result === 'denied'
         ? 'Motion access was declined, so the touch wheel is back. Allow it in Safari settings to use tilt.'
@@ -69,10 +73,11 @@ const sheet = initSettingsSheet(document, settings, (key, value) => {
 });
 
 const modes = initModes(document, mode => {
-  // Tilt first: its permission request needs the tap, and going full screen may use it up.
-  if (mode === 'racing' && settings.steering === 'tilt') void useSteering('tilt');
-  else if (mode !== 'racing') steering.disableTilt(); // tilt must not steer the other layouts
-  void shell.fullscreen();
+  if (mode === 'racing' && settings.steering === 'tilt') void useSteering('tilt'); // goes full screen too
+  else {
+    if (mode !== 'racing') steering.disableTilt(); // tilt must not steer the other layouts
+    void shell.fullscreen();
+  }
   void shell.keepAwake();
 });
 
