@@ -1,0 +1,56 @@
+# Every push and pull request: Rust tests and the phone app's type check.
+# A pushed tag like v0.3.0 also builds the download into a draft release. Publish
+# the draft and older copies of Player Four show their "New version" button.
+# tests/run.mjs (phones in Chrome against real controllers) needs the ViGEmBus
+# driver, which GitHub's machines don't have: run it locally before tagging.
+name: CI
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: pc
+      - name: Rust tests
+        run: cargo test --locked --manifest-path pc/Cargo.toml
+      - name: Phone app types
+        run: npx -y -p typescript@5 tsc -p phone
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: check
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: pc
+      - name: Tag matches the app's version
+        # The new-version check compares the release tag with the version built into the app.
+        run: |
+          $version = (Select-String -Path pc/Cargo.toml -Pattern '^version = "(.+)"').Matches[0].Groups[1].Value
+          if ("v$version" -ne $env:TAG) { throw "Tag $env:TAG, but pc/Cargo.toml says version $version" }
+      - name: Build the download
+        run: ./pack/pack.ps1
+      - name: Draft release with the zip
+        run: |
+          $version = $env:TAG.TrimStart('v')
+          $zip = "dist/PlayerFour-$version-windows.zip"
+          gh release view $env:TAG *> $null
+          if ($LASTEXITCODE -eq 0) { gh release upload $env:TAG $zip --clobber }
+          else { gh release create $env:TAG $zip --draft --title "Player Four $version" --generate-notes }
