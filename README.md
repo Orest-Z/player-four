@@ -212,10 +212,14 @@ Chrome against the real PC app and reads the controllers back the way a game wou
 It needs Node 22+, Chrome and ViGEmBus. On every push and pull request, CI runs the Rust
 tests and the type check. The phone tests need ViGEmBus, so they run on your PC only.
 
-**Releasing:** run the tests, raise `version` in `pc/Cargo.toml` and commit, then push a tag
-of `v` plus that version: `git tag v0.3.0`, then `git push origin main v0.3.0`. CI checks that
-the tag matches the version, builds the zip and attaches it to a draft release. Write the
-notes and publish it: older copies then show their **New version** button.
+**Changes:** `main` takes changes only through pull requests whose CI check passed. Nobody
+can force-push to it or delete it.
+
+**Releasing:** run the tests, then raise `version` in `pc/Cargo.toml` in a pull request. Once
+it's merged, tag that commit with `v` plus the version: `git pull`, `git tag v0.3.0`, then
+`git push origin v0.3.0`. CI checks that the tag matches the version, builds the zip and
+attaches it to a draft release. Write the notes and publish it: older copies then show
+their **New version** button.
 
 | Folder     | What's inside                                              |
 | ---------- | ---------------------------------------------------------- |
