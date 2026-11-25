@@ -2,6 +2,7 @@
 name = "player-four"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
 
 # The PC side: phones become virtual Xbox controllers, with a small window and tray icon.
 [dependencies]
@@ -13,6 +14,7 @@ rustls = { version = "0.23.46", default-features = false, features = ["ring", "s
 # rust-crypto: pure Rust, so no C toolchain or OpenSSL needed to build.
 str0m = { version = "0.25.0", default-features = false, features = ["rust-crypto"] }
 tray-icon = "0.26.1"
+ureq = { version = "3.5.2", default-features = false, features = ["rustls"] } # the new-version check
 vigem-client = { version = "0.1.4", features = ["unstable_xtarget_notification"] } # rumble from games
 
 [build-dependencies]

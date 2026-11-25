@@ -7,12 +7,13 @@
 **Your phone is the controller.**
 
 Scan a QR code and up to four phones become Xbox controllers on your PC.<br>
-No app to install, no account, nothing online.
+No app to install, no account, no cloud.
 
 ![PC: Windows 10/11](https://img.shields.io/badge/PC-Windows_10%2F11-3b82f6?style=flat-square)
 ![Phones: Android and iPhone](https://img.shields.io/badge/phones-Android_%7C_iPhone-f97316?style=flat-square)
 ![Made with Rust](https://img.shields.io/badge/PC_app-Rust-a855f7?style=flat-square)
 ![Status: early alpha](https://img.shields.io/badge/status-early_alpha-eab308?style=flat-square)
+[![License: MIT](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE)
 
 <img src="docs/pc-window.png" width="620" alt="The Player Four window: a QR code to scan and two connected players with live inputs">
 
@@ -59,6 +60,11 @@ games, for free.
 5. Pick a layout and play. In the phone's settings, each player can set a name and color.
 
 Closing the window keeps Player Four in the tray, so everyone stays connected.
+
+**Updates:** when a new version is out, a **New version** button appears at the top of the
+window. Download the new zip and replace the old `Player Four.exe`. Your settings stay. To
+find out, Player Four asks GitHub for the latest version when it starts and once a day.
+That's the only thing it sends to the internet, and it says nothing about you or your games.
 
 ### Installing the controller driver
 
@@ -200,6 +206,10 @@ That gives `pc\target\release\player-four.exe`, with the phone app packed inside
 To make the download (the program, its README and a zip):
 `powershell -ExecutionPolicy Bypass -File pack\pack.ps1`, which writes to `dist\`.
 
+**Releasing:** raise `version` in `pc/Cargo.toml`, pack, then publish a GitHub release tagged
+`v` plus that version (e.g. `v0.2.0`) with the zip attached. Older copies see the tag and
+show their **New version** button.
+
 **Tests:** `node tests/run.mjs` type-checks the phone app, then plays phones in headless
 Chrome against the real PC app and reads the controllers back the way a game would.
 It needs Node 22+, Chrome and ViGEmBus.
@@ -221,10 +231,17 @@ It needs Node 22+, Chrome and ViGEmBus.
 - [x] Player names and colors
 - [x] One-file download
 - [x] Phone vibrates when the game rumbles (Android)
-- [ ] Tells you when there's a new version
+- [x] Tells you when there's a new version
 - [ ] Linux and Steam Deck
 
 ## Credits and license
 
 Made by [Orest-Z](https://github.com/Orest-Z).
-Player Four will be free and open source. The license is still being chosen.
+
+Player Four is free and open source under the [MIT License](LICENSE). Use it, change it
+and share it, even in your own projects, as long as you keep the copyright notice and the
+license with it.
+
+Built on [ViGEmBus](https://github.com/nefarius/ViGEmBus) by Nefarius for the virtual
+controllers, [str0m](https://github.com/algesten/str0m) for WebRTC and
+[egui](https://github.com/emilk/egui) for the window.

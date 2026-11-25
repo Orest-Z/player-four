@@ -15,6 +15,7 @@ Get-ChildItem $folder | Remove-Item -Recurse -Force
 if (Test-Path $zip) { Remove-Item -Force $zip }
 
 Copy-Item "$root\pc\target\release\player-four.exe" "$folder\Player Four.exe"
+Copy-Item "$root\LICENSE" "$folder\LICENSE.txt"
 (Get-Content "$PSScriptRoot\README.txt" -Raw).Replace('{version}', $version) | Set-Content -Encoding UTF8 "$folder\README.txt"
 Compress-Archive -Path $folder -DestinationPath $zip
 

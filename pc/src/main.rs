@@ -44,6 +44,8 @@ pub struct Shared {
     pub url: Option<String>,
     pub problem: Option<Problem>,
     pub players: Vec<PlayerView>,
+    /// A newer version on GitHub, e.g. "0.2.0".
+    pub update: Option<String>,
 }
 
 #[derive(Clone)]
@@ -99,7 +101,55 @@ fn main() -> eframe::Result {
             ui::wake();
         }
     });
+    let update_shared = shared.clone();
+    std::thread::spawn(move || {
+        loop {
+            if let Some(version) = latest_version().filter(|v| newer(v, env!("CARGO_PKG_VERSION"))) {
+                update_shared.lock().unwrap().update = Some(version);
+                ui::wake();
+                return;
+            }
+            std::thread::sleep(Duration::from_secs(24 * 60 * 60)); // it can sit in the tray for days
+        }
+    });
     ui::run(shared)
+}
+
+/// The latest release's version, from GitHub. The only thing Player Four asks the internet.
+fn latest_version() -> Option<String> {
+    let agent: ureq::Agent = ureq::Agent::config_builder().timeout_global(Some(Duration::from_secs(15))).build().into();
+    let mut response = agent
+        .get("https://api.github.com/repos/Orest-Z/player-four/releases/latest")
+        .header("User-Agent", concat!("player-four/", env!("CARGO_PKG_VERSION")))
+        .call()
+        .ok()?;
+    let json = response.body_mut().read_to_string().ok()?;
+    tag_name(&json).map(|tag| tag.trim_start_matches('v').to_string())
+}
+
+/// `"tag_name": "v0.2.0"` out of GitHub's release JSON.
+fn tag_name(json: &str) -> Option<&str> {
+    let rest = json.split_once("\"tag_name\"")?.1.trim_start().strip_prefix(':')?.trim_start().strip_prefix('"')?;
+    Some(rest.split_once('"')?.0)
+}
+
+/// True if `latest` ("0.10.0") is a higher version than `current` ("0.9.2"). False if either isn't numbers.
+fn newer(latest: &str, current: &str) -> bool {
+    let parse = |v: &str| v.split('.').map(str::parse).collect::<Result<Vec<u32>, _>>().ok();
+    matches!((parse(latest), parse(current)), (Some(l), Some(c)) if l > c)
+}
+
+#[test]
+fn update_check_reads_and_compares_versions() {
+    assert_eq!(tag_name(r#"{"url":"x","tag_name":"v0.2.0","name":"Player Four 0.2.0"}"#), Some("v0.2.0"));
+    assert_eq!(tag_name("{\n  \"tag_name\" : \"v1.0.0\"\n}"), Some("v1.0.0"));
+    assert_eq!(tag_name(r#"{"message":"Not Found"}"#), None);
+    assert!(newer("0.2.0", "0.1.0"));
+    assert!(newer("0.1.10", "0.1.9")); // numbers, not text
+    assert!(newer("1.0.0", "0.9.9"));
+    for (latest, current) in [("0.1.0", "0.1.0"), ("0.0.9", "0.1.0"), ("0.2.0-beta", "0.1.0"), ("", "0.1.0")] {
+        assert!(!newer(latest, current), "{latest} vs {current}");
+    }
 }
 
 /// Phones in, controllers out. Runs until the app quits.

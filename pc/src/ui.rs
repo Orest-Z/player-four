@@ -26,6 +26,7 @@ const SETTINGS: &str = "settings.txt"; // in crate::data_dir()
 /// A second launch finds the first one here and asks it to show its window instead.
 const INSTANCE_PORT: u16 = 47801;
 const DRIVER_URL: &str = "https://github.com/nefarius/ViGEmBus/releases/latest";
+const RELEASES_URL: &str = "https://github.com/Orest-Z/player-four/releases/latest";
 
 // The phone app's palette (phone/src/style.css), so both screens feel like one product.
 const BG: Color32 = Color32::from_rgb(0x0b, 0x0d, 0x10);
@@ -154,6 +155,17 @@ impl App {
                     (None, None) => (AMBER, "Starting…".to_string()),
                 };
                 pill(ui, dot, &text);
+                if let Some(version) = &state.update {
+                    let label = RichText::new(format!("New version {version}  ·  Download")).size(13.0).family(family("semibold")).color(TEXT);
+                    let button = egui::Button::new(label)
+                        .fill(PLAYER[0].gamma_multiply(0.22))
+                        .stroke(Stroke::new(1.0, PLAYER[0]))
+                        .corner_radius(CornerRadius::same(16))
+                        .min_size(vec2(0.0, 32.0));
+                    if ui.add(button).on_hover_text("Open the download page").clicked() {
+                        ui.ctx().open_url(egui::OpenUrl::new_tab(RELEASES_URL));
+                    }
+                }
             });
         });
     }

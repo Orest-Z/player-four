@@ -6,8 +6,8 @@
 ==================================================================
 
 Up to four phones become Xbox controllers on this PC. Nothing to
-install on the phones, no account, and nothing online: the phones
-talk straight to this PC over your Wi-Fi.
+install on the phones, no account, and no cloud: the phones talk
+straight to this PC over your Wi-Fi.
 
 
 FIRST TIME ON THIS PC
@@ -51,11 +51,17 @@ GOOD TO KNOW
 ------------
 - Closing the window can keep Player Four running in the tray,
   next to the clock. Right-click its icon there to quit.
+- When a new version is out, a "New version" button appears at
+  the top of the window. Download the new zip and replace the
+  old Player Four.exe: your settings stay. To find out, Player
+  Four asks GitHub for the latest version when it starts and once
+  a day. That's all it ever sends to the internet.
 - Settings and certificates live in %APPDATA%\Player Four.
   Delete that folder to start fresh.
 - Games see up to four Xbox 360 controllers. Players are numbered
   in the order they join.
 
 
-Player Four is free. Source code and updates:
+Player Four is free and open source under the MIT License
+(see LICENSE.txt). Source code and updates:
 https://github.com/Orest-Z/player-four
