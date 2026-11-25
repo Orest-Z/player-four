@@ -14,6 +14,7 @@ No app to install, no account, no cloud.
 ![Made with Rust](https://img.shields.io/badge/PC_app-Rust-a855f7?style=flat-square)
 ![Status: early alpha](https://img.shields.io/badge/status-early_alpha-eab308?style=flat-square)
 [![License: MIT](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/Orest-Z/player-four/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/Orest-Z/player-four/actions/workflows/ci.yml)
 
 <img src="docs/pc-window.png" width="620" alt="The Player Four window: a QR code to scan and two connected players with live inputs">
 
@@ -206,21 +207,24 @@ That gives `pc\target\release\player-four.exe`, with the phone app packed inside
 To make the download (the program, its README and a zip):
 `powershell -ExecutionPolicy Bypass -File pack\pack.ps1`, which writes to `dist\`.
 
-**Releasing:** raise `version` in `pc/Cargo.toml`, pack, then publish a GitHub release tagged
-`v` plus that version (e.g. `v0.2.0`) with the zip attached. Older copies see the tag and
-show their **New version** button.
-
 **Tests:** `node tests/run.mjs` type-checks the phone app, then plays phones in headless
 Chrome against the real PC app and reads the controllers back the way a game would.
-It needs Node 22+, Chrome and ViGEmBus.
+It needs Node 22+, Chrome and ViGEmBus. On every push and pull request, CI runs the Rust
+tests and the type check. The phone tests need ViGEmBus, so they run on your PC only.
 
-| Folder   | What's inside                                              |
-| -------- | ---------------------------------------------------------- |
-| `phone/` | The controller web app that phones open                    |
-| `pc/`    | The PC app: connections, virtual controllers, window, tray |
-| `pack/`  | Builds the download and holds its README                   |
-| `tests/` | End-to-end tests                                           |
-| `brand/` | Logo and icon files                                        |
+**Releasing:** run the tests, raise `version` in `pc/Cargo.toml` and commit, then push a tag
+of `v` plus that version: `git tag v0.3.0`, then `git push origin main v0.3.0`. CI checks that
+the tag matches the version, builds the zip and attaches it to a draft release. Write the
+notes and publish it: older copies then show their **New version** button.
+
+| Folder     | What's inside                                              |
+| ---------- | ---------------------------------------------------------- |
+| `phone/`   | The controller web app that phones open                    |
+| `pc/`      | The PC app: connections, virtual controllers, window, tray |
+| `pack/`    | Builds the download and holds its README                   |
+| `tests/`   | End-to-end tests                                           |
+| `brand/`   | Logo and icon files                                        |
+| `.github/` | CI: checks every push, builds the download for releases    |
 
 ## Roadmap
 
